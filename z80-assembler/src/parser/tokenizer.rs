@@ -137,13 +137,11 @@ mod tests {
 
     #[test]
     fn test1() {
-        let mut parser = Tokenizer::new(
-            r#"
+        let mut parser = Tokenizer::new(r#"
 .test_label:
 ADD    INC
 .label2:
-"#,
-        );
+"#);
 
         assert_eq!(Token::NewLine, parser.next().unwrap());
         assert_eq!(Token::Label("test_label"), parser.next().unwrap());
@@ -156,9 +154,7 @@ ADD    INC
 
     #[test]
     fn test_short_value() {
-        let mut parser = Tokenizer::new(
-            r"add a, 3Ah",
-        );
+        let mut parser = Tokenizer::new(r"add a, 3Ah");
 
         assert_eq!(Token::Identifier("add"), parser.next().unwrap());
         assert_eq!(Token::Identifier("a"), parser.next().unwrap());
@@ -168,9 +164,7 @@ ADD    INC
 
     #[test]
     fn test_wide_value() {
-        let mut parser = Tokenizer::new(
-            r"add a, 3bAh",
-        );
+        let mut parser = Tokenizer::new(r"add a, 3bAh");
 
         assert_eq!(Token::Identifier("add"), parser.next().unwrap());
         assert_eq!(Token::Identifier("a"), parser.next().unwrap());
@@ -180,11 +174,8 @@ ADD    INC
 
     #[test]
     fn test_instruction_with_address() {
-        let mut parser = Tokenizer::new(
-            r#"ld bc, &2130h
-call
-"#,
-        );
+        let mut parser = Tokenizer::new(r#"ld bc, &2130h
+call"#);
 
         assert_eq!(Token::Identifier("ld"), parser.next().unwrap());
         assert_eq!(Token::Identifier("bc"), parser.next().unwrap());
@@ -192,6 +183,6 @@ call
         assert_eq!(Token::Address(8496), parser.next().unwrap());
         assert_eq!(Token::NewLine, parser.next().unwrap());
         assert_eq!(Token::Identifier("call"), parser.next().unwrap());
-        assert_eq!(Token::NewLine, parser.next().unwrap());
+        assert_eq!(Token::EOF, parser.next().unwrap());
     }
 }
