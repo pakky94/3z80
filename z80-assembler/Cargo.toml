@@ -1,0 +1,14 @@
+[package]
+name = "z80_assembler"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "z80_assembler"
+path = "src/lib.rs"
+
+[[bin]]
+name = "z80_assembler"
+path = "src/bin.rs"
+
+[dependencies]
