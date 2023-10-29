@@ -8,15 +8,15 @@ pub fn test() {
     println!("parser test module");
 }
 
-pub struct Parser<'a> {
+pub struct Tokenizer<'a> {
     source: &'a str,
     chars: Peekable<CharIndices<'a>>,
     curr_line: usize,
 }
 
-impl<'a> Parser<'a> {
+impl<'a> Tokenizer<'a> {
     fn new(source: &'a str) -> Self {
-        Parser {
+        Tokenizer {
             source,
             chars: source.char_indices().peekable(),
             curr_line: 1,
@@ -27,7 +27,9 @@ impl<'a> Parser<'a> {
         loop {
             if let Some((_, c)) = self.chars.peek() {
                 if *c == '\n' {
-                    self.curr_line += 1
+                    self.curr_line += 1;
+                    self.chars.next();
+                    return Ok(Token::NewLine)
                 }
 
                 if !c.is_whitespace() {
@@ -43,6 +45,7 @@ impl<'a> Parser<'a> {
         if let Some((_, c)) = self.chars.peek() {
             match c {
                 '.' => self.parse_label(),
+                'a'..='z' | 'A'..='Z' => self.parse_identifier(),
                 _ => Err(ParseError::UnexpectedChar(c.clone(), self.curr_line))
             }
         } else {
@@ -64,6 +67,24 @@ impl<'a> Parser<'a> {
             Err(ParseError::UnexpectedEOF(self.curr_line))
         }
     }
+
+    fn parse_identifier(&mut self) -> Result<Token, ParseError> {
+        if let Some((start, _)) = self.chars.next(){
+            loop {
+                if let Some((p, c)) = self.chars.peek() {
+                    match c {
+                        'a'..='z' | 'A'..='Z' => {
+                            let _ = self.next();
+                            continue
+                        },
+                        _ => return Ok(Token::Identifier(&self.source[start..*p]))
+                    }
+                }
+            }
+        } else {
+            Err(ParseError::UnexpectedEOF(self.curr_line))
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -74,18 +95,24 @@ enum ParseError {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::{Parser, Token};
+    use crate::parser::{Tokenizer, Token};
 
     #[test]
     fn test1() {
-        let mut parser = Parser::new(
+        let mut parser = Tokenizer::new(
             r#"
 .test_label:
+ADD    INC
 .label2:
 "#,
         );
 
+        assert_eq!(Token::NewLine, parser.next().unwrap());
         assert_eq!(Token::Label("test_label"), parser.next().unwrap());
+        assert_eq!(Token::NewLine, parser.next().unwrap());
+        assert_eq!(Token::Identifier("ADD"), parser.next().unwrap());
+        assert_eq!(Token::Identifier("INC"), parser.next().unwrap());
+        assert_eq!(Token::NewLine, parser.next().unwrap());
         assert_eq!(Token::Label("label2"), parser.next().unwrap());
     }
 }
