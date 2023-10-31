@@ -276,4 +276,17 @@ add b, 8h"#,
             *parser.parse().unwrap().items.get(0).unwrap()
         );
     }
+
+    #[test]
+    fn test_parse_address_reg_argument_with_offset() {
+        let mut parser = Parser::new("ld A, (IX + 15h)");
+        assert_eq!(
+            ParseItem::Instruction(Instruction {
+                opcode: "ld".to_string(),
+                arg0: Argument::ShortReg(ShortReg::A),
+                arg1: Argument::RegOffsetAddress(WideReg::IX, 21),
+            }),
+            *parser.parse().unwrap().items.get(0).unwrap()
+        );
+    }
 }
