@@ -1,5 +1,4 @@
 use crate::domain::*;
-use crate::domain::enums::*;
 use crate::domain::register::{parse_register, ParsedRegister};
 use crate::parser::errors::{ParseError, UnexpectedToken};
 use crate::parser::token::Token;
@@ -155,7 +154,8 @@ pub fn test() {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::{Argument, Instruction, ParseItem, Parser, ShortReg, WideReg};
+    use crate::parser::{Argument, Instruction, ParseItem, Parser};
+    use crate::domain::enums::{ShortReg, WideReg};
 
     #[test]
     fn test_parse1() {
