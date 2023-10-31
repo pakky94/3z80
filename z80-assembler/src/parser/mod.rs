@@ -36,6 +36,10 @@ enum ShortReg {
     A,
     B,
     C,
+    D,
+    E,
+    H,
+    L,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -43,6 +47,9 @@ enum WideReg {
     BC,
     DE,
     HL,
+    SP,
+    IX,
+    IY,
 }
 
 #[derive(Debug)]
@@ -163,6 +170,17 @@ impl<'a> Parser<'a> {
         Ok(match identifier {
             "a" => Argument::ShortReg(ShortReg::A),
             "b" => Argument::ShortReg(ShortReg::B),
+            "c" => Argument::ShortReg(ShortReg::C),
+            "d" => Argument::ShortReg(ShortReg::D),
+            "e" => Argument::ShortReg(ShortReg::E),
+            "h" => Argument::ShortReg(ShortReg::H),
+            "l" => Argument::ShortReg(ShortReg::L),
+            "bc" => Argument::WideReg(WideReg::BC),
+            "de" => Argument::WideReg(WideReg::DE),
+            "hl" => Argument::WideReg(WideReg::HL),
+            "sp" => Argument::WideReg(WideReg::SP),
+            "ix" => Argument::WideReg(WideReg::IX),
+            "iy" => Argument::WideReg(WideReg::IY),
             _ => unimplemented!("unimplemented identifier handler: {:?}", identifier)
         })
     }
