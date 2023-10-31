@@ -1,3 +1,6 @@
+use crate::domain::*;
+use crate::domain::enums::*;
+use crate::domain::register::{parse_register, ParsedRegister};
 use crate::parser::errors::{ParseError, UnexpectedToken};
 use crate::parser::token::Token;
 use crate::parser::tokenizer::Tokenizer;
@@ -7,68 +10,16 @@ mod token;
 mod tokenizer;
 
 #[derive(Debug)]
-struct Parser<'a> {
+pub struct Parser<'a> {
     source: &'a str,
     tokenizer: Tokenizer<'a>,
     pos: usize,
     items: Vec<ParseItem>,
 }
 
-#[derive(Debug, Eq, PartialEq)]
-pub struct Instruction {
-    opcode: String,
-    arg0: Argument,
-    arg1: Argument,
-}
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-enum Argument {
-    None,
-    ShortReg(ShortReg),
-    WideReg(WideReg),
-    Short(u8),
-    Wide(u16),
-    DirectAddress(u16),
-    RegAddress(WideReg),
-    RegOffsetAddress(WideReg, u8),
-}
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-enum ShortReg {
-    A,
-    B,
-    C,
-    D,
-    E,
-    H,
-    L,
-}
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-enum WideReg {
-    BC,
-    DE,
-    HL,
-    SP,
-    IX,
-    IY,
-}
-
-#[derive(Debug, Eq, PartialEq)]
-struct Label {
-    name: String,
-    target: usize,
-}
-
 #[derive(Debug)]
-struct ParseResult {
+pub struct ParseResult {
     items: Vec<ParseItem>,
-}
-
-#[derive(Debug, Eq, PartialEq)]
-enum ParseItem {
-    Label(Label),
-    Instruction(Instruction),
 }
 
 impl<'a> Parser<'a> {
@@ -165,7 +116,7 @@ impl<'a> Parser<'a> {
                     if let Token::Plus = self.tokenizer.peek()? {
                         self.tokenizer.next()?;
                         if let Token::ShortValue(offset) = self.tokenizer.next()? {
-                            if let ParseRegisterResult::WideReg(wr) = self.parse_register(&i) {
+                            if let ParsedRegister::WideReg(wr) = parse_register(&i) {
                                 self.tokenizer.expect(Token::CloseParen)?;
                                 Ok(Argument::RegOffsetAddress(wr, offset))
                             } else {
@@ -175,7 +126,7 @@ impl<'a> Parser<'a> {
                             unimplemented!()
                         }
                     } else {
-                        if let ParseRegisterResult::WideReg(wr) = self.parse_register(&i) {
+                        if let ParsedRegister::WideReg(wr) = parse_register(&i) {
                             self.tokenizer.expect(Token::CloseParen)?;
                             Ok(Argument::RegAddress(wr))
                         } else {
@@ -187,40 +138,15 @@ impl<'a> Parser<'a> {
                 }
             }
             Token::Label(_) => unimplemented!(),
-            Token::Identifier(i) => Ok(match self.parse_register(&i) {
-                ParseRegisterResult::ShortReg(sr) => Argument::ShortReg(sr),
-                ParseRegisterResult::WideReg(wr) => Argument::WideReg(wr),
+            Token::Identifier(i) => Ok(match parse_register(&i) {
+                ParsedRegister::ShortReg(sr) => Argument::ShortReg(sr),
+                ParsedRegister::WideReg(wr) => Argument::WideReg(wr),
                 _ => unimplemented!(),
             }),
             Token::NewLine => unreachable!(),
             _ => unimplemented!(),
         }
     }
-
-    fn parse_register(&mut self, identifier: &str) -> ParseRegisterResult {
-        match identifier.to_lowercase().as_str() {
-            "a" => ParseRegisterResult::ShortReg(ShortReg::A),
-            "b" => ParseRegisterResult::ShortReg(ShortReg::B),
-            "c" => ParseRegisterResult::ShortReg(ShortReg::C),
-            "d" => ParseRegisterResult::ShortReg(ShortReg::D),
-            "e" => ParseRegisterResult::ShortReg(ShortReg::E),
-            "h" => ParseRegisterResult::ShortReg(ShortReg::H),
-            "l" => ParseRegisterResult::ShortReg(ShortReg::L),
-            "bc" => ParseRegisterResult::WideReg(WideReg::BC),
-            "de" => ParseRegisterResult::WideReg(WideReg::DE),
-            "hl" => ParseRegisterResult::WideReg(WideReg::HL),
-            "sp" => ParseRegisterResult::WideReg(WideReg::SP),
-            "ix" => ParseRegisterResult::WideReg(WideReg::IX),
-            "iy" => ParseRegisterResult::WideReg(WideReg::IY),
-            _ => unimplemented!("unimplemented identifier handler: {:?}", identifier),
-        }
-    }
-}
-
-enum ParseRegisterResult {
-    WideReg(WideReg),
-    ShortReg(ShortReg),
-    Error(ParseError),
 }
 
 pub fn test() {
@@ -233,7 +159,7 @@ mod tests {
 
     #[test]
     fn test_parse1() {
-        let mut parser = Parser::new(
+        let parser = Parser::new(
             r#"
 .label1:
 ld A, 10h
@@ -266,7 +192,7 @@ add b, 8h"#,
 
     #[test]
     fn test_parse_address_reg_argument() {
-        let mut parser = Parser::new("ld A, (IX)");
+        let parser = Parser::new("ld A, (IX)");
         assert_eq!(
             ParseItem::Instruction(Instruction {
                 opcode: "ld".to_string(),
@@ -279,7 +205,7 @@ add b, 8h"#,
 
     #[test]
     fn test_parse_address_reg_argument_with_offset() {
-        let mut parser = Parser::new("ld A, (IX + 15h)");
+        let parser = Parser::new("ld A, (IX + 15h)");
         assert_eq!(
             ParseItem::Instruction(Instruction {
                 opcode: "ld".to_string(),
