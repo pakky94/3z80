@@ -78,12 +78,12 @@ impl<'a> Parser<'a> {
 
             let r = match t {
                 Token::Label(_) => self.parse_label()?,
-                Token::Identifier(_) => unimplemented!(),
-                Token::Address(_) => unimplemented!(),
-                Token::ShortValue(_) => unimplemented!(),
-                Token::WideValue(_) => unimplemented!(),
-                Token::Comma => unimplemented!(),
-                Token::NewLine => unimplemented!(),
+                Token::Identifier(_) => unimplemented!("unexpected identifier"),
+                Token::Address(_) => unimplemented!("unexpected address"),
+                Token::ShortValue(_) => unimplemented!("unexpected short value"),
+                Token::WideValue(_) => unimplemented!("unexpected wide value"),
+                Token::Comma => unimplemented!("unexpected comma"),
+                Token::NewLine => unimplemented!("unexpected newline"),
                 Token::EOF => break,
             };
             self.items.push(r)
@@ -94,6 +94,7 @@ impl<'a> Parser<'a> {
 
     fn parse_label(&mut self) -> Result<ParseItem, ParseError> {
         if let Ok(Token::Label(l)) = self.tokenizer.next() {
+            self.tokenizer.expect(Token::NewLine)?;
             Ok(ParseItem::Label(Label {
                 name: l.to_string(),
                 target: self.pos,
@@ -145,12 +146,10 @@ mod tests {
 
     #[test]
     fn test_parse1() {
-        let mut parser = Parser::new(
-            r#"
+        let mut parser = Parser::new(r#"
 .label1:
 ld A, 10h
-add A, 8h"#,
-        );
+add A, 8h"#);
         let result = parser.parse().unwrap();
 
         if let Label(label) = result.items.get(0).unwrap() {

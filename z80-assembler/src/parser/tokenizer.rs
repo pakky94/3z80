@@ -1,4 +1,4 @@
-use crate::parser::errors::ParseError;
+use crate::parser::errors::{ParseError, UnexpectedToken};
 use crate::parser::token::Token;
 use std::iter::Peekable;
 use std::str::CharIndices;
@@ -28,6 +28,20 @@ impl<'a> Tokenizer<'a> {
             let t = self.next()?;
             self.head = Some(t.clone());
             Ok(t)
+        }
+    }
+
+    pub fn expect(&mut self, expected: Token) -> Result<(), ParseError> {
+        let actual = self.next()?;
+        if actual == expected {
+            Ok(())
+        } else {
+            Err(ParseError::UnexpectedToken(UnexpectedToken {
+                expected,
+                actual,
+                line: self.curr_line,
+                char: 0,
+            }))
         }
     }
 
