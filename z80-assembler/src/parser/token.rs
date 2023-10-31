@@ -2,7 +2,9 @@
 pub enum Token {
     Label(String),
     Identifier(String),
-    Address(u16),
+    OpenParen,
+    CloseParen,
+    Plus,
     ShortValue(u8),
     WideValue(u16),
     Comma,

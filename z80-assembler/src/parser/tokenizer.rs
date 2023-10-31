@@ -73,8 +73,7 @@ impl<'a> Tokenizer<'a> {
         if let Some((_, c)) = self.chars.peek() {
             match c {
                 '.' => self.parse_label(),
-                '&' => self.parse_address(),
-                ',' => self.parse_single_char(),
+                ',' | '(' | ')' | '+' => self.parse_single_char(),
                 'a'..='z' | 'A'..='Z' | '0'..='9' => self.parse_identifier(),
                 _ => Err(ParseError::UnexpectedChar(c.clone(), self.curr_line)),
             }
@@ -122,18 +121,12 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
-    fn parse_address(&mut self) -> Result<Token, ParseError> {
-        let _ = self.chars.next(); // '&'
-
-        match self.parse_identifier() {
-            Ok(Token::WideValue(val)) => Ok(Token::Address(val)),
-            e => unimplemented!("error handling for invalid address {:?}", e),
-        }
-    }
-
     fn parse_single_char(&mut self) -> Result<Token, ParseError> {
         match self.chars.next() {
             Some((_, ',')) => Ok(Token::Comma),
+            Some((_, '(')) => Ok(Token::OpenParen),
+            Some((_, ')')) => Ok(Token::CloseParen),
+            Some((_, '+')) => Ok(Token::Plus),
             _ => unreachable!(),
         }
     }
@@ -213,20 +206,40 @@ ADD    INC
     #[test]
     fn test_instruction_with_address() {
         let mut parser = Tokenizer::new(
-            r#"ld bc, &2130h
+            r#"ld bc, (2130h)
 call"#,
         );
 
         assert_eq!(Token::Identifier("ld".to_string()), parser.next().unwrap());
         assert_eq!(Token::Identifier("bc".to_string()), parser.next().unwrap());
         assert_eq!(Token::Comma, parser.next().unwrap());
-        assert_eq!(Token::Address(8496), parser.next().unwrap());
+        assert_eq!(Token::OpenParen, parser.next().unwrap());
+        assert_eq!(Token::WideValue(8496), parser.next().unwrap());
+        assert_eq!(Token::CloseParen, parser.next().unwrap());
         assert_eq!(Token::NewLine, parser.next().unwrap());
         assert_eq!(
             Token::Identifier("call".to_string()),
             parser.next().unwrap()
         );
         assert_eq!(Token::EOF, parser.next().unwrap());
+    }
+
+    #[test]
+    fn test_address_reg() {
+        let mut parser = Tokenizer::new(r#"(BC)"#);
+        assert_eq!(Token::OpenParen, parser.next().unwrap());
+        assert_eq!(Token::Identifier("BC".to_string()), parser.next().unwrap());
+        assert_eq!(Token::CloseParen, parser.next().unwrap());
+    }
+
+    #[test]
+    fn test_address_reg_offset() {
+        let mut parser = Tokenizer::new(r#"(BC + 19h)"#);
+        assert_eq!(Token::OpenParen, parser.next().unwrap());
+        assert_eq!(Token::Identifier("BC".to_string()), parser.next().unwrap());
+        assert_eq!(Token::Plus, parser.next().unwrap());
+        assert_eq!(Token::ShortValue(25), parser.next().unwrap());
+        assert_eq!(Token::CloseParen, parser.next().unwrap());
     }
 
     #[test]

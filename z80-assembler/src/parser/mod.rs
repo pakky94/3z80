@@ -28,7 +28,9 @@ enum Argument {
     WideReg(WideReg),
     Short(u8),
     Wide(u16),
-    Address(u16),
+    DirectAddress(u16),
+    RegAddress(WideReg),
+    RegOffsetAddress(WideReg, u8),
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -86,7 +88,6 @@ impl<'a> Parser<'a> {
             let r = match t {
                 Token::Label(_) => self.parse_label()?,
                 Token::Identifier(_) => self.parse_instruction()?,
-                Token::Address(a) => unimplemented!("unexpected address {:?} - {:?}", a, self.items),
                 Token::ShortValue(_) => unimplemented!("unexpected short value {:?}", self.items),
                 Token::WideValue(_) => unimplemented!("unexpected wide value {:?}", self.items),
                 Token::Comma => unimplemented!("unexpected comma {:?}", self.items),
@@ -95,6 +96,7 @@ impl<'a> Parser<'a> {
                     continue;
                 }
                 Token::EOF => break,
+                _ => unimplemented!("unexpected token {:?} - {:?}", t, self.items),
             };
             self.items.push(r)
         }
@@ -157,33 +159,44 @@ impl<'a> Parser<'a> {
         Ok(match self.tokenizer.next()? {
             Token::ShortValue(v) => Argument::Short(v),
             Token::WideValue(v) => Argument::Wide(v),
+            Token::OpenParen => {
+                unimplemented!()
+            }
             Token::Label(_) => unimplemented!(),
-            Token::Identifier(i) => self.parse_argument_identifier(i.to_lowercase().as_str())?,
-            Token::Address(a) => Argument::Address(a),
-            Token::Comma => unimplemented!(),
+            Token::Identifier(i) => match self.parse_register(i.to_lowercase().as_str()) {
+                ParseRegisterResult::ShortReg(sr) => Argument::ShortReg(sr),
+                ParseRegisterResult::WideReg(wr) => Argument::WideReg(wr),
+                _ => unimplemented!(),
+            },
             Token::NewLine => unreachable!(),
-            Token::EOF => unimplemented!(),
+            _ => unimplemented!(),
         })
     }
 
-    fn parse_argument_identifier(&mut self, identifier: &str) -> Result<Argument, ParseError> {
-        Ok(match identifier {
-            "a" => Argument::ShortReg(ShortReg::A),
-            "b" => Argument::ShortReg(ShortReg::B),
-            "c" => Argument::ShortReg(ShortReg::C),
-            "d" => Argument::ShortReg(ShortReg::D),
-            "e" => Argument::ShortReg(ShortReg::E),
-            "h" => Argument::ShortReg(ShortReg::H),
-            "l" => Argument::ShortReg(ShortReg::L),
-            "bc" => Argument::WideReg(WideReg::BC),
-            "de" => Argument::WideReg(WideReg::DE),
-            "hl" => Argument::WideReg(WideReg::HL),
-            "sp" => Argument::WideReg(WideReg::SP),
-            "ix" => Argument::WideReg(WideReg::IX),
-            "iy" => Argument::WideReg(WideReg::IY),
-            _ => unimplemented!("unimplemented identifier handler: {:?}", identifier)
-        })
+    fn parse_register(&mut self, identifier: &str) -> ParseRegisterResult {
+        match identifier {
+            "a" => ParseRegisterResult::ShortReg(ShortReg::A),
+            "b" => ParseRegisterResult::ShortReg(ShortReg::B),
+            "c" => ParseRegisterResult::ShortReg(ShortReg::C),
+            "d" => ParseRegisterResult::ShortReg(ShortReg::D),
+            "e" => ParseRegisterResult::ShortReg(ShortReg::E),
+            "h" => ParseRegisterResult::ShortReg(ShortReg::H),
+            "l" => ParseRegisterResult::ShortReg(ShortReg::L),
+            "bc" => ParseRegisterResult::WideReg(WideReg::BC),
+            "de" => ParseRegisterResult::WideReg(WideReg::DE),
+            "hl" => ParseRegisterResult::WideReg(WideReg::HL),
+            "sp" => ParseRegisterResult::WideReg(WideReg::SP),
+            "ix" => ParseRegisterResult::WideReg(WideReg::IX),
+            "iy" => ParseRegisterResult::WideReg(WideReg::IY),
+            _ => unimplemented!("unimplemented identifier handler: {:?}", identifier),
+        }
     }
+}
+
+enum ParseRegisterResult {
+    WideReg(WideReg),
+    ShortReg(ShortReg),
+    Error(ParseError),
 }
 
 pub fn test() {
