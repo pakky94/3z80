@@ -21,11 +21,10 @@ pub enum Argument {
     None,
     ShortReg(ShortReg),
     WideReg(WideReg),
-    Short(u8),
-    Wide(u16),
+    Value(u16),
     DirectAddress(u16),
     RegAddress(WideReg),
-    RegOffsetAddress(WideReg, u8),
+    RegOffsetAddress(WideReg, u16),
 }
 
 #[derive(Debug, Eq, PartialEq)]

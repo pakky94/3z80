@@ -1,5 +1,5 @@
-use crate::domain::*;
 use crate::domain::register::{parse_register, ParsedRegister};
+use crate::domain::*;
 use crate::parser::errors::{ParseError, UnexpectedToken};
 use crate::parser::token::Token;
 use crate::parser::tokenizer::Tokenizer;
@@ -38,8 +38,7 @@ impl<'a> Parser<'a> {
             let r = match t {
                 Token::Label(_) => self.parse_label()?,
                 Token::Identifier(_) => self.parse_instruction()?,
-                Token::ShortValue(_) => unimplemented!("unexpected short value {:?}", self.items),
-                Token::WideValue(_) => unimplemented!("unexpected wide value {:?}", self.items),
+                Token::Value(_) => unimplemented!("unexpected wide value {:?}", self.items),
                 Token::Comma => unimplemented!("unexpected comma {:?}", self.items),
                 Token::NewLine => {
                     self.tokenizer.next()?;
@@ -108,13 +107,12 @@ impl<'a> Parser<'a> {
 
     fn parse_argument(&mut self) -> Result<Argument, ParseError> {
         match self.tokenizer.next()? {
-            Token::ShortValue(v) => Ok(Argument::Short(v)),
-            Token::WideValue(v) => Ok(Argument::Wide(v)),
-            Token::OpenParen => {
-                if let Token::Identifier(i) = self.tokenizer.next()? {
+            Token::Value(v) => Ok(Argument::Value(v)),
+            Token::OpenParen => match self.tokenizer.next()? {
+                Token::Identifier(i) => {
                     if let Token::Plus = self.tokenizer.peek()? {
                         self.tokenizer.next()?;
-                        if let Token::ShortValue(offset) = self.tokenizer.next()? {
+                        if let Token::Value(offset) = self.tokenizer.next()? {
                             if let ParsedRegister::WideReg(wr) = parse_register(&i) {
                                 self.tokenizer.expect(Token::CloseParen)?;
                                 Ok(Argument::RegOffsetAddress(wr, offset))
@@ -132,10 +130,13 @@ impl<'a> Parser<'a> {
                             unimplemented!()
                         }
                     }
-                } else {
-                    unimplemented!()
                 }
-            }
+                Token::Value(val) => {
+                    self.tokenizer.expect(Token::CloseParen)?;
+                    Ok(Argument::DirectAddress(val))
+                }
+                _ => unimplemented!()
+            },
             Token::Label(_) => unimplemented!(),
             Token::Identifier(i) => Ok(match parse_register(&i) {
                 ParsedRegister::ShortReg(sr) => Argument::ShortReg(sr),
@@ -154,8 +155,8 @@ pub fn test() {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::{Argument, Instruction, ParseItem, Parser};
     use crate::domain::enums::{ShortReg, WideReg};
+    use crate::parser::{Argument, Instruction, ParseItem, Parser};
 
     #[test]
     fn test_parse1() {
@@ -176,7 +177,7 @@ add b, 8h"#,
         if let ParseItem::Instruction(inst1) = result.items.get(1).unwrap() {
             assert_eq!(inst1.opcode, "ld");
             assert_eq!(inst1.arg0, Argument::ShortReg(ShortReg::A));
-            assert_eq!(inst1.arg1, Argument::Short(16));
+            assert_eq!(inst1.arg1, Argument::Value(16));
         } else {
             panic!()
         }
@@ -184,7 +185,7 @@ add b, 8h"#,
         if let ParseItem::Instruction(inst2) = result.items.get(2).unwrap() {
             assert_eq!(inst2.opcode, "add");
             assert_eq!(inst2.arg0, Argument::ShortReg(ShortReg::B));
-            assert_eq!(inst2.arg1, Argument::Short(8));
+            assert_eq!(inst2.arg1, Argument::Value(8));
         } else {
             panic!()
         }
@@ -211,6 +212,19 @@ add b, 8h"#,
                 opcode: "ld".to_string(),
                 arg0: Argument::ShortReg(ShortReg::A),
                 arg1: Argument::RegOffsetAddress(WideReg::IX, 21),
+            }),
+            *parser.parse().unwrap().items.get(0).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_parse_address() {
+        let parser = Parser::new("ld BC, (A2C5h)");
+        assert_eq!(
+            ParseItem::Instruction(Instruction {
+                opcode: "ld".to_string(),
+                arg0: Argument::WideReg(WideReg::BC),
+                arg1: Argument::DirectAddress(41669),
             }),
             *parser.parse().unwrap().items.get(0).unwrap()
         );
