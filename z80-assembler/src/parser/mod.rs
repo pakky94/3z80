@@ -1,4 +1,4 @@
-use crate::parser::errors::ParseError;
+use crate::parser::errors::{ParseError, UnexpectedToken};
 use crate::parser::token::Token;
 use crate::parser::tokenizer::Tokenizer;
 
@@ -78,12 +78,15 @@ impl<'a> Parser<'a> {
 
             let r = match t {
                 Token::Label(_) => self.parse_label()?,
-                Token::Identifier(_) => unimplemented!("unexpected identifier"),
-                Token::Address(_) => unimplemented!("unexpected address"),
-                Token::ShortValue(_) => unimplemented!("unexpected short value"),
-                Token::WideValue(_) => unimplemented!("unexpected wide value"),
-                Token::Comma => unimplemented!("unexpected comma"),
-                Token::NewLine => unimplemented!("unexpected newline"),
+                Token::Identifier(_) => self.parse_instruction()?,
+                Token::Address(a) => unimplemented!("unexpected address {:?} - {:?}", a, self.items),
+                Token::ShortValue(_) => unimplemented!("unexpected short value {:?}", self.items),
+                Token::WideValue(_) => unimplemented!("unexpected wide value {:?}", self.items),
+                Token::Comma => unimplemented!("unexpected comma {:?}", self.items),
+                Token::NewLine => {
+                    self.tokenizer.next()?;
+                    continue;
+                }
                 Token::EOF => break,
             };
             self.items.push(r)
@@ -120,18 +123,48 @@ impl<'a> Parser<'a> {
             return Ok(ParseItem::Instruction(inst));
         }
 
-        inst.arg0 = match self.tokenizer.next()? {
+        inst.arg0 = self.parse_argument()?;
+
+        if self.tokenizer.peek()? != Token::Comma {
+            return Ok(ParseItem::Instruction(inst));
+        }
+
+        self.tokenizer.next()?; // Token::Comma
+
+        inst.arg1 = self.parse_argument()?;
+
+        let t = self.tokenizer.peek()?;
+        if t != Token::NewLine && t != Token::EOF {
+            return Err(ParseError::UnexpectedToken(UnexpectedToken {
+                expected: Token::NewLine,
+                actual: t,
+                line: 0,
+                char: 0,
+            }));
+        }
+
+        Ok(ParseItem::Instruction(inst))
+    }
+
+    fn parse_argument(&mut self) -> Result<Argument, ParseError> {
+        Ok(match self.tokenizer.next()? {
             Token::ShortValue(v) => Argument::Short(v),
             Token::WideValue(v) => Argument::Wide(v),
             Token::Label(_) => unimplemented!(),
-            Token::Identifier(_) => unimplemented!(),
+            Token::Identifier(i) => self.parse_argument_identifier(i.to_lowercase().as_str())?,
             Token::Address(a) => Argument::Address(a),
             Token::Comma => unimplemented!(),
             Token::NewLine => unreachable!(),
             Token::EOF => unimplemented!(),
-        };
+        })
+    }
 
-        Ok(ParseItem::Instruction(inst))
+    fn parse_argument_identifier(&mut self, identifier: &str) -> Result<Argument, ParseError> {
+        Ok(match identifier {
+            "a" => Argument::ShortReg(ShortReg::A),
+            "b" => Argument::ShortReg(ShortReg::B),
+            _ => unimplemented!("unimplemented identifier handler: {:?}", identifier)
+        })
     }
 }
 
@@ -146,10 +179,12 @@ mod tests {
 
     #[test]
     fn test_parse1() {
-        let mut parser = Parser::new(r#"
+        let mut parser = Parser::new(
+            r#"
 .label1:
 ld A, 10h
-add A, 8h"#);
+add b, 8h"#,
+        );
         let result = parser.parse().unwrap();
 
         if let Label(label) = result.items.get(0).unwrap() {
@@ -168,7 +203,7 @@ add A, 8h"#);
 
         if let Instruction(inst2) = result.items.get(2).unwrap() {
             assert_eq!(inst2.opcode, "add");
-            assert_eq!(inst2.arg0, Argument::ShortReg(ShortReg::A));
+            assert_eq!(inst2.arg0, Argument::ShortReg(ShortReg::B));
             assert_eq!(inst2.arg1, Argument::Short(8));
         } else {
             panic!()
