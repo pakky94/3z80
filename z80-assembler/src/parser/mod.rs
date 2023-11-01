@@ -12,7 +12,6 @@ mod tokenizer;
 
 #[derive(Debug)]
 pub struct Parser<'a> {
-    source: &'a str,
     tokenizer: Tokenizer<'a>,
     line: usize,
     items: Vec<ParseItem>,
@@ -26,7 +25,6 @@ pub struct ParseResult {
 impl<'a> Parser<'a> {
     pub fn new(source: &'a str) -> Self {
         Parser {
-            source,
             tokenizer: Tokenizer::new(source),
             items: Vec::new(),
             line: 1,

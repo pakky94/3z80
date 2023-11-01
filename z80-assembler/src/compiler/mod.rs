@@ -101,7 +101,7 @@ mod tests {
     #[test]
     #[rustfmt::skip]
     fn test_compile_inst_1() {
-        let mut compiler = Compiler::new(InMemorySourceProvider {
+        let compiler = Compiler::new(InMemorySourceProvider {
             files: vec![(
                 SourceHeader { filename: "main.z80".to_string(), },
                 r#"
@@ -124,7 +124,7 @@ ld b, 12h
     #[test]
     #[rustfmt::skip]
     fn test_compile_labels() {
-        let mut compiler = Compiler::new(InMemorySourceProvider {
+        let compiler = Compiler::new(InMemorySourceProvider {
             files: vec![(
                 SourceHeader { filename: "main.z80".to_string(), },
                 r#"
@@ -166,7 +166,7 @@ ld l, (IY + a3h)
 
     #[test]
     fn label_not_found_error() {
-        let mut compiler = Compiler::new(InMemorySourceProvider {
+        let compiler = Compiler::new(InMemorySourceProvider {
             files: vec![(
                 SourceHeader {
                     filename: "main.z80".to_string(),

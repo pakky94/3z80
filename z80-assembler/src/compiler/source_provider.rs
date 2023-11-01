@@ -23,7 +23,7 @@ impl SourceProvider for InMemorySourceProvider {
     fn source(&self, filename: &str) -> String {
         self.files
             .iter()
-            .find(|(h, c)| h.filename == filename)
+            .find(|(h, _)| h.filename == filename)
             .map(|(_, c)| c.clone())
             .unwrap()
     }
