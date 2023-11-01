@@ -135,6 +135,8 @@ ld b, 12h
 .label4: 15h
 ld b, *label3
 ld a, &label4
+ld a, (BC)
+ld a, (DE)
 ld a, (ABCDh)
 ld a, (HL)
 ld e, (IX + 5h)
@@ -154,6 +156,8 @@ ld l, (IY + a3h)
                 0b00111010, // ld a, &label4
                 0b00000011,
                 0b00000000,
+                0b00001010, // ld a, (BC)
+                0b00011010, // ld a, (DE)
                 0b00111010, // ld a, (ABCDh)
                 0b11001101,
                 0b10101011,

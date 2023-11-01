@@ -7,6 +7,8 @@ pub enum ShortReg {
     E,
     H,
     L,
+    I,
+    R,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

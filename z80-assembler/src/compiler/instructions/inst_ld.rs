@@ -22,16 +22,22 @@ const LD_IX_NN_1: u8 = 0b00100001;
 pub fn compile_ld(inst: &Instruction, idx: usize) -> Result<CompileData, CompileError> {
     match (&inst.arg0, &inst.arg1) {
         (Argument::ShortReg(sr0), Argument::ShortReg(sr1)) => {
-            let opcode = LD_R_R | (to_3bit_code(*sr0) << 3) | to_3bit_code(*sr1);
+            let opcode = LD_R_R | (to_3bit_code(*sr0)? << 3) | to_3bit_code(*sr1)?;
             compile_data_1(opcode, None)
         }
         (Argument::ShortReg(sr0), Argument::Value(val)) => guard_values_short(0, *val, || {
-            let opcode = LD_R_N | (to_3bit_code(*sr0) << 3);
+            let opcode = LD_R_N | (to_3bit_code(*sr0)? << 3);
             compile_data_2(opcode, *val as u8, None)
         }),
         (Argument::ShortReg(sr0), Argument::LabelValue(label)) => {
-            let opcode = LD_R_N | (to_3bit_code(*sr0) << 3);
+            let opcode = LD_R_N | (to_3bit_code(*sr0)? << 3);
             compile_data_2(opcode, 0, ph_value(idx + 1, label.clone(), inst.line))
+        }
+        (Argument::ShortReg(ShortReg::A), Argument::RegAddress(WideReg::BC)) => {
+            compile_data_1(0b00001010, None)
+        }
+        (Argument::ShortReg(ShortReg::A), Argument::RegAddress(WideReg::DE)) => {
+            compile_data_1(0b00011010, None)
         }
         (Argument::ShortReg(ShortReg::A), Argument::LabelAddress(label)) => {
             compile_data_3(LD_A_NN, 0, 0, ph_addr(idx + 1, label.clone(), inst.line))
@@ -40,18 +46,18 @@ pub fn compile_ld(inst: &Instruction, idx: usize) -> Result<CompileData, Compile
             compile_data_3(LD_A_NN, low_byte(*addr), high_byte(*addr), None)
         }
         (Argument::ShortReg(sr0), Argument::RegAddress(WideReg::HL)) => {
-            let opcode = LD_R_HL | (to_3bit_code(*sr0) << 3);
+            let opcode = LD_R_HL | (to_3bit_code(*sr0)? << 3);
             compile_data_1(opcode, None)
         }
         (Argument::ShortReg(sr0), Argument::RegOffsetAddress(WideReg::IX, offset)) => {
             guard_values_short(0, *offset, || {
-                let o1 = LD_R_IX_1 | (to_3bit_code(*sr0) << 3);
+                let o1 = LD_R_IX_1 | (to_3bit_code(*sr0)? << 3);
                 compile_data_3(LD_R_IX_0, o1, *offset as u8, None)
             })
         }
         (Argument::ShortReg(sr0), Argument::RegOffsetAddress(WideReg::IY, offset)) => {
             guard_values_short(0, *offset, || {
-                let o1 = LD_R_IY_1 | (to_3bit_code(*sr0) << 3);
+                let o1 = LD_R_IY_1 | (to_3bit_code(*sr0)? << 3);
                 compile_data_3(LD_R_IY_0, o1, *offset as u8, None)
             })
         }

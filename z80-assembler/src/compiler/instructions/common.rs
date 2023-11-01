@@ -4,15 +4,19 @@ use crate::compiler::instructions::{
 use crate::domain::enums::{ShortReg, WideReg};
 use crate::domain::Argument;
 
-pub fn to_3bit_code(sr: ShortReg) -> u8 {
+pub fn to_3bit_code(sr: ShortReg) -> Result<u8, CompileError> {
     match sr {
-        ShortReg::A => 0b111,
-        ShortReg::B => 0b000,
-        ShortReg::C => 0b001,
-        ShortReg::D => 0b010,
-        ShortReg::E => 0b011,
-        ShortReg::H => 0b100,
-        ShortReg::L => 0b101,
+        ShortReg::A => Ok(0b111),
+        ShortReg::B => Ok(0b000),
+        ShortReg::C => Ok(0b001),
+        ShortReg::D => Ok(0b010),
+        ShortReg::E => Ok(0b011),
+        ShortReg::H => Ok(0b100),
+        ShortReg::L => Ok(0b101),
+        _ => Err(CompileError {
+            error: CompileErrorType::UnexpectedArgument(Argument::ShortReg(sr)),
+            instr: None,
+        }),
     }
 }
 
@@ -22,11 +26,7 @@ pub fn to_2bit_code(wr: WideReg) -> Result<u8, CompileError> {
         WideReg::DE => Ok(0b01),
         WideReg::HL => Ok(0b10),
         WideReg::SP => Ok(0b11),
-        WideReg::IX => Err(CompileError {
-            error: CompileErrorType::UnexpectedArgument(Argument::WideReg(wr)),
-            instr: None,
-        }),
-        WideReg::IY => Err(CompileError {
+        _ => Err(CompileError {
             error: CompileErrorType::UnexpectedArgument(Argument::WideReg(wr)),
             instr: None,
         }),

@@ -15,6 +15,8 @@ pub fn parse_register(identifier: &str) -> ParsedRegister {
         "e" => ParsedRegister::ShortReg(ShortReg::E),
         "h" => ParsedRegister::ShortReg(ShortReg::H),
         "l" => ParsedRegister::ShortReg(ShortReg::L),
+        "i" => ParsedRegister::ShortReg(ShortReg::I),
+        "r" => ParsedRegister::ShortReg(ShortReg::R),
         "bc" => ParsedRegister::WideReg(WideReg::BC),
         "de" => ParsedRegister::WideReg(WideReg::DE),
         "hl" => ParsedRegister::WideReg(WideReg::HL),
