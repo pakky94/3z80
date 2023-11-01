@@ -2,16 +2,17 @@ use crate::compiler::instructions::CompileData;
 use crate::domain::Instruction;
 use crate::parser::ParseError;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct CompileError {
     pub error: CompileErrorType,
     pub instr: Option<Instruction>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum CompileErrorType {
     ParseError(ParseError),
     ExpectedShortArgument(usize, u16),
+    LabelNotFound(String, usize),
 }
 
 pub fn unimplemented_instr(instr: &Instruction) -> ! {

@@ -63,20 +63,22 @@ pub fn compile_data_4(
     })
 }
 
-pub fn ph_value(idx: usize, label: String) -> Option<Placeholder> {
+pub fn ph_value(idx: usize, label: String, line: usize) -> Option<Placeholder> {
     Some(Placeholder {
         idx,
         label,
         size: 1,
         ph_type: PlaceholderType::Value,
+        line,
     })
 }
 
-pub fn ph_addr(idx: usize, label: String) -> Option<Placeholder> {
+pub fn ph_addr(idx: usize, label: String, line: usize) -> Option<Placeholder> {
     Some(Placeholder {
         idx,
         label,
         size: 2,
         ph_type: PlaceholderType::Address,
+        line,
     })
 }

@@ -18,6 +18,7 @@ pub struct Placeholder {
     pub label: String,
     pub size: u8,
     pub ph_type: PlaceholderType,
+    pub line: usize,
 }
 
 pub enum PlaceholderType {

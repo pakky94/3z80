@@ -28,10 +28,10 @@ pub fn compile_ld(inst: &Instruction, idx: usize) -> Result<CompileData, Compile
             }),
             Argument::LabelValue(label) => {
                 let opcode = LD_R_N | (to_3bit_code(sr0) << 3);
-                compile_data_2(opcode, 0, ph_value(idx + 1, label.clone()))
+                compile_data_2(opcode, 0, ph_value(idx + 1, label.clone(), inst.line))
             }
             Argument::LabelAddress(label) => {
-                compile_data_3(LD_R_NN, 0, 0, ph_addr(idx + 1, label.clone()))
+                compile_data_3(LD_R_NN, 0, 0, ph_addr(idx + 1, label.clone(), inst.line))
             }
             Argument::RegAddress(WideReg::HL) => {
                 let opcode = LD_R_HL | (to_3bit_code(sr0) << 3);

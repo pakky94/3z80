@@ -85,7 +85,10 @@ where
                     }
                 }
             } else {
-                unimplemented!("error")
+                return Err(CompileError {
+                    error: CompileErrorType::LabelNotFound(ph.label, ph.line),
+                    instr: None,
+                });
             }
         }
 
@@ -95,6 +98,7 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::compiler::instructions::{CompileError, CompileErrorType};
     use crate::compiler::source_provider::{InMemorySourceProvider, SourceHeader};
     use crate::Compiler;
 
@@ -162,6 +166,30 @@ ld l, (IY + a3h)
             ],
             compiler.compile(1024).unwrap(),
         );
+    }
+
+    #[test]
+    fn label_not_found_error() {
+        let mut compiler = Compiler::new(InMemorySourceProvider {
+            files: vec![(
+                SourceHeader {
+                    filename: "main.z80".to_string(),
+                },
+                r#"
+.label1: 12h
+ld a, *missing_label
+"#
+                .to_string(),
+            )],
+        });
+
+        assert_eq!(
+            CompileError {
+                error: CompileErrorType::LabelNotFound("missing_label".to_string(), 3),
+                instr: None,
+            },
+            compiler.compile(1024).unwrap_err()
+        )
     }
 
     fn compare_memory(expected: Vec<u8>, actual: Vec<u8>) {
