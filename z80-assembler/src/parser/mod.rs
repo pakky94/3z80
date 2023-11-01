@@ -36,7 +36,7 @@ impl<'a> Parser<'a> {
             let t = self.tokenizer.peek()?;
 
             let r = match t {
-                Token::Label(_) => self.parse_label()?,
+                Token::Dot => self.parse_label()?,
                 Token::Identifier(_) => self.parse_instruction()?,
                 Token::Value(_) => unimplemented!("unexpected wide value {:?}", self.items),
                 Token::Comma => unimplemented!("unexpected comma {:?}", self.items),
@@ -54,14 +54,15 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_label(&mut self) -> Result<ParseItem, ParseError> {
-        if let Ok(Token::Label(l)) = self.tokenizer.next() {
-            self.tokenizer.expect(Token::NewLine)?;
+        self.tokenizer.next()?;
+        if let Ok(Token::Identifier(l)) = self.tokenizer.next() {
+            self.tokenizer.expect(Token::Colon)?;
             Ok(ParseItem::Label(Label {
                 name: l.to_string(),
                 target: self.pos,
             }))
         } else {
-            panic!()
+            unimplemented!("expected identifier token")
         }
     }
 
@@ -137,7 +138,6 @@ impl<'a> Parser<'a> {
                 }
                 _ => unimplemented!()
             },
-            Token::Label(_) => unimplemented!(),
             Token::Identifier(i) => Ok(match parse_register(&i) {
                 ParsedRegister::ShortReg(sr) => Argument::ShortReg(sr),
                 ParsedRegister::WideReg(wr) => Argument::WideReg(wr),
@@ -156,6 +156,7 @@ pub fn test() {
 #[cfg(test)]
 mod tests {
     use crate::domain::enums::{ShortReg, WideReg};
+    use crate::domain::Label;
     use crate::parser::{Argument, Instruction, ParseItem, Parser};
 
     #[test]
@@ -227,6 +228,27 @@ add b, 8h"#,
                 arg1: Argument::DirectAddress(41669),
             }),
             *parser.parse().unwrap().items.get(0).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_parse_label_instr_same_line() {
+        let parser = Parser::new(".my_label: ADD A, A9h");
+        let res = parser.parse().unwrap();
+        assert_eq!(
+            ParseItem::Label(Label {
+                name: "my_label".to_string(),
+                target: 0,
+            }),
+            *res.items.get(0).unwrap()
+        );
+        assert_eq!(
+            ParseItem::Instruction(Instruction {
+                opcode: "add".to_string(),
+                arg0: Argument::ShortReg(ShortReg::A),
+                arg1: Argument::Value(169),
+            }),
+            *res.items.get(1).unwrap()
         );
     }
 }

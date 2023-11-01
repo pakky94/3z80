@@ -72,30 +72,12 @@ impl<'a> Tokenizer<'a> {
 
         if let Some((_, c)) = self.chars.peek() {
             match c {
-                '.' => self.parse_label(),
-                ',' | '(' | ')' | '+' => self.parse_single_char(),
+                ',' | '(' | ')' | '+' | '.' | ':' => self.parse_single_char(),
                 'a'..='z' | 'A'..='Z' | '0'..='9' => self.parse_identifier(),
                 _ => Err(ParseError::UnexpectedChar(c.clone(), self.curr_line)),
             }
         } else {
             Ok(Token::EOF)
-        }
-    }
-
-    fn parse_label(&mut self) -> Result<Token, ParseError> {
-        let _ = self.chars.next(); // '.'
-        if let Some((start, _)) = self.chars.next() {
-            loop {
-                if let Some((p, c)) = self.chars.next() {
-                    if c == ':' {
-                        return Ok(Token::Label(self.source[start..p].to_string()));
-                    }
-                } else {
-                    return Err(ParseError::UnexpectedEOF(self.curr_line));
-                }
-            }
-        } else {
-            Err(ParseError::UnexpectedEOF(self.curr_line))
         }
     }
 
@@ -105,7 +87,7 @@ impl<'a> Tokenizer<'a> {
             loop {
                 if let Some((p, c)) = self.chars.peek() {
                     match c {
-                        'a'..='z' | 'A'..='Z' | '0'..='9' => {
+                        'a'..='z' | 'A'..='Z' | '0'..='9' | '_' => {
                             end = (*p).clone() + 1;
                             let _ = self.chars.next();
                             continue;
@@ -127,6 +109,8 @@ impl<'a> Tokenizer<'a> {
             Some((_, '(')) => Ok(Token::OpenParen),
             Some((_, ')')) => Ok(Token::CloseParen),
             Some((_, '+')) => Ok(Token::Plus),
+            Some((_, '.')) => Ok(Token::Dot),
+            Some((_, ':')) => Ok(Token::Colon),
             _ => unreachable!(),
         }
     }
@@ -168,15 +152,19 @@ ADD    INC
         );
 
         assert_eq!(Token::NewLine, parser.next().unwrap());
+        assert_eq!(Token::Dot, parser.next().unwrap());
         assert_eq!(
-            Token::Label("test_label".to_string()),
+            Token::Identifier("test_label".to_string()),
             parser.next().unwrap()
         );
+        assert_eq!(Token::Colon, parser.next().unwrap());
         assert_eq!(Token::NewLine, parser.next().unwrap());
         assert_eq!(Token::Identifier("ADD".to_string()), parser.next().unwrap());
         assert_eq!(Token::Identifier("INC".to_string()), parser.next().unwrap());
         assert_eq!(Token::NewLine, parser.next().unwrap());
-        assert_eq!(Token::Label("label2".to_string()), parser.next().unwrap());
+        assert_eq!(Token::Dot, parser.next().unwrap());
+        assert_eq!(Token::Identifier("label2".to_string()), parser.next().unwrap());
+        assert_eq!(Token::Colon, parser.next().unwrap());
     }
 
     #[test]
