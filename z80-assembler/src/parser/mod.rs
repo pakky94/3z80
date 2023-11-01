@@ -1,7 +1,8 @@
 use crate::domain::conditions::{condition_allowed, parse_condition};
 use crate::domain::register::{parse_register, ParsedRegister};
 use crate::domain::*;
-use crate::parser::errors::{ParseError, UnexpectedToken};
+pub use crate::parser::errors::ParseError;
+use crate::parser::errors::UnexpectedToken;
 use crate::parser::token::Token;
 use crate::parser::tokenizer::Tokenizer;
 
@@ -19,7 +20,7 @@ pub struct Parser<'a> {
 
 #[derive(Debug)]
 pub struct ParseResult {
-    items: Vec<ParseItem>,
+    pub(crate) items: Vec<ParseItem>,
 }
 
 impl<'a> Parser<'a> {
@@ -179,16 +180,12 @@ impl<'a> Parser<'a> {
             Ok(match size {
                 1 => ParseItem::Data(vec![val as u8]),
                 2 => ParseItem::Data(vec![(val % 256) as u8, (val / 256) as u8]),
-                _ => panic!("unexpected Value size {:?}", size)
+                _ => panic!("unexpected Value size {:?}", size),
             })
         } else {
             unreachable!()
         }
     }
-}
-
-pub fn test() {
-    println!("parser test module");
 }
 
 #[cfg(test)]
@@ -364,16 +361,15 @@ RET M
 
     #[test]
     fn test_parse_data() {
-        let parser = Parser::new(r#"
+        let parser = Parser::new(
+            r#"
 .data1: 15h
-.data2: aa15h"#);
-        let res = parser.parse().unwrap();
-        assert_eq!(
-            ParseItem::Data(vec![ 21u8 ]),
-            *res.items.get(1).unwrap()
+.data2: aa15h"#,
         );
+        let res = parser.parse().unwrap();
+        assert_eq!(ParseItem::Data(vec![21u8]), *res.items.get(1).unwrap());
         assert_eq!(
-            ParseItem::Data(vec![ 21u8, 170u8 ]),
+            ParseItem::Data(vec![21u8, 170u8]),
             *res.items.get(3).unwrap()
         );
     }
