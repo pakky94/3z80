@@ -4,7 +4,7 @@ pub enum Token {
     OpenParen,
     CloseParen,
     Plus,
-    Value(u16),
+    Value(u16, u8),
     Comma,
     Dot,
     Colon,

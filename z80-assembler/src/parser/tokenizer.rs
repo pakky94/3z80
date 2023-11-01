@@ -146,7 +146,7 @@ fn parse_identifier_or_value(s: &str) -> Token {
                 }
             }
 
-            Token::Value(acc)
+            Token::Value(acc, (len / 2) as u8)
         }
         Some(_) => Token::Identifier(s.to_string()),
         None => unreachable!(),
@@ -193,7 +193,7 @@ ADD    INC
         assert_eq!(Token::Identifier("add".to_string()), parser.next().unwrap());
         assert_eq!(Token::Identifier("a".to_string()), parser.next().unwrap());
         assert_eq!(Token::Comma, parser.next().unwrap());
-        assert_eq!(Token::Value(58), parser.next().unwrap());
+        assert_eq!(Token::Value(58, 1), parser.next().unwrap());
     }
 
     #[test]
@@ -203,7 +203,7 @@ ADD    INC
         assert_eq!(Token::Identifier("add".to_string()), parser.next().unwrap());
         assert_eq!(Token::Identifier("a".to_string()), parser.next().unwrap());
         assert_eq!(Token::Comma, parser.next().unwrap());
-        assert_eq!(Token::Value(954), parser.next().unwrap());
+        assert_eq!(Token::Value(954, 2), parser.next().unwrap());
     }
 
     #[test]
@@ -217,7 +217,7 @@ call"#,
         assert_eq!(Token::Identifier("bc".to_string()), parser.next().unwrap());
         assert_eq!(Token::Comma, parser.next().unwrap());
         assert_eq!(Token::OpenParen, parser.next().unwrap());
-        assert_eq!(Token::Value(8496), parser.next().unwrap());
+        assert_eq!(Token::Value(8496, 2), parser.next().unwrap());
         assert_eq!(Token::CloseParen, parser.next().unwrap());
         assert_eq!(Token::NewLine, parser.next().unwrap());
         assert_eq!(
@@ -237,11 +237,11 @@ call"#,
 
     #[test]
     fn test_address_reg_offset() {
-        let mut parser = Tokenizer::new(r#"(BC + 19h)"#);
+        let mut parser = Tokenizer::new(r#"(BC + 9h)"#);
         assert_eq!(Token::OpenParen, parser.next().unwrap());
         assert_eq!(Token::Identifier("BC".to_string()), parser.next().unwrap());
         assert_eq!(Token::Plus, parser.next().unwrap());
-        assert_eq!(Token::Value(25), parser.next().unwrap());
+        assert_eq!(Token::Value(9, 1), parser.next().unwrap());
         assert_eq!(Token::CloseParen, parser.next().unwrap());
     }
 
@@ -254,7 +254,7 @@ call"#,
         assert_eq!(Token::Identifier("a".to_string()), parser.next().unwrap());
         assert_eq!(Token::Comma, parser.peek().unwrap());
         assert_eq!(Token::Comma, parser.next().unwrap());
-        assert_eq!(Token::Value(58), parser.next().unwrap());
+        assert_eq!(Token::Value(58, 1), parser.next().unwrap());
         assert_eq!(Token::EOF, parser.next().unwrap());
     }
 }

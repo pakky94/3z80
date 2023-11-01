@@ -39,6 +39,7 @@ impl<'a> Parser<'a> {
             let r = match t {
                 Token::Dot => self.parse_label()?,
                 Token::Identifier(_) => self.parse_instruction()?,
+                Token::Value(_, _) => self.parse_data()?,
                 Token::NewLine => {
                     self.tokenizer.next()?;
                     self.pos += 1;
@@ -108,7 +109,7 @@ impl<'a> Parser<'a> {
 
     fn parse_argument(&mut self, code: &str) -> Result<Argument, ParseError> {
         match self.tokenizer.next()? {
-            Token::Value(v) => Ok(Argument::Value(v)),
+            Token::Value(v, _) => Ok(Argument::Value(v)), // TODO: pass length?
             Token::OpenParen => self.parse_address_arg(),
             Token::Identifier(i) => {
                 if condition_allowed(code) {
@@ -145,7 +146,8 @@ impl<'a> Parser<'a> {
             Token::Identifier(i) => {
                 if let Token::Plus = self.tokenizer.peek()? {
                     self.tokenizer.next()?;
-                    if let Token::Value(offset) = self.tokenizer.next()? {
+                    if let Token::Value(offset, _) = self.tokenizer.next()? {
+                        // TODO: validate length here???
                         if let ParsedRegister::WideReg(wr) = parse_register(&i) {
                             self.tokenizer.expect(Token::CloseParen)?;
                             Ok(Argument::RegOffsetAddress(wr, offset))
@@ -164,11 +166,23 @@ impl<'a> Parser<'a> {
                     }
                 }
             }
-            Token::Value(val) => {
+            Token::Value(val, _) => {
                 self.tokenizer.expect(Token::CloseParen)?;
                 Ok(Argument::DirectAddress(val))
             }
             _ => unimplemented!(),
+        }
+    }
+
+    fn parse_data(&mut self) -> Result<ParseItem, ParseError> {
+        if let Token::Value(val, size) = self.tokenizer.next()? {
+            Ok(match size {
+                1 => ParseItem::Data(vec![val as u8]),
+                2 => ParseItem::Data(vec![(val % 256) as u8, (val / 256) as u8]),
+                _ => panic!("unexpected Value size {:?}", size)
+            })
+        } else {
+            unreachable!()
         }
     }
 }
@@ -344,6 +358,22 @@ RET M
                 arg0: Argument::Condition(Condition::M),
                 arg1: Argument::None,
             }),
+            *res.items.get(3).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_parse_data() {
+        let parser = Parser::new(r#"
+.data1: 15h
+.data2: aa15h"#);
+        let res = parser.parse().unwrap();
+        assert_eq!(
+            ParseItem::Data(vec![ 21u8 ]),
+            *res.items.get(1).unwrap()
+        );
+        assert_eq!(
+            ParseItem::Data(vec![ 21u8, 170u8 ]),
             *res.items.get(3).unwrap()
         );
     }

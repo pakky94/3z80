@@ -8,6 +8,7 @@ pub mod register;
 pub enum ParseItem {
     Label(Label),
     Instruction(Instruction),
+    Data(Vec<u8>),
 }
 
 #[derive(Debug, Eq, PartialEq)]

@@ -1,4 +1,5 @@
 pub mod domain;
 pub mod parser;
+pub mod compiler;
 
-pub use parser::Parser;
+pub use compiler::Compiler;
