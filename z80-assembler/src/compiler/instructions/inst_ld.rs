@@ -15,6 +15,10 @@ const LD_R_IY_1: u8 = 0b01000110;
 const LD_IX_N_0: u8 = 0b11011101;
 const LD_IX_N_1: u8 = 0b00110110;
 
+const LD_DD_NN: u8 = 0b00000001;
+const LD_IX_NN_0: u8 = 0b11011101;
+const LD_IX_NN_1: u8 = 0b00100001;
+
 pub fn compile_ld(inst: &Instruction, idx: usize) -> Result<CompileData, CompileError> {
     match inst.arg0 {
         Argument::ShortReg(sr0) => match &inst.arg1 {
@@ -22,7 +26,7 @@ pub fn compile_ld(inst: &Instruction, idx: usize) -> Result<CompileData, Compile
                 let opcode = LD_R_R | (to_3bit_code(sr0) << 3) | to_3bit_code(*sr1);
                 compile_data_1(opcode, None)
             }
-            Argument::Value(val) => guard_values_short(inst, 0, *val, || {
+            Argument::Value(val) => guard_values_short(0, *val, || {
                 let opcode = LD_R_N | (to_3bit_code(sr0) << 3);
                 compile_data_2(opcode, *val as u8, None)
             }),
@@ -38,21 +42,34 @@ pub fn compile_ld(inst: &Instruction, idx: usize) -> Result<CompileData, Compile
                 compile_data_1(opcode, None)
             }
             Argument::RegOffsetAddress(WideReg::IX, offset) => {
-                guard_values_short(inst, 0, *offset, || {
+                guard_values_short(0, *offset, || {
                     let o1 = LD_R_IX_1 | (to_3bit_code(sr0) << 3);
                     compile_data_3(LD_R_IX_0, o1, *offset as u8, None)
                 })
             }
             Argument::RegOffsetAddress(WideReg::IY, offset) => {
-                guard_values_short(inst, 0, *offset, || {
+                guard_values_short(0, *offset, || {
                     let o1 = LD_R_IY_1 | (to_3bit_code(sr0) << 3);
                     compile_data_3(LD_R_IY_0, o1, *offset as u8, None)
                 })
             }
             _ => unimplemented_instr(&inst),
         },
+        Argument::WideReg(WideReg::IX) => match &inst.arg1 {
+            Argument::Value(val) => {
+                compile_data_4(LD_IX_NN_0, LD_IX_NN_1, low_byte(*val), high_byte(*val), None)
+            }
+            _ => unimplemented_instr(&inst),
+        }
+        Argument::WideReg(wr) => match &inst.arg1 {
+            Argument::Value(val) => {
+                let opcode = LD_DD_NN | (to_2bit_code(wr)? << 4);
+                compile_data_3(opcode, low_byte(*val), high_byte(*val), None)
+            }
+            _ => unimplemented_instr(&inst),
+        }
         Argument::RegOffsetAddress(WideReg::IX, offset) => match inst.arg1 {
-            Argument::Value(val) => guard_values_short(inst, offset, val, || {
+            Argument::Value(val) => guard_values_short(offset, val, || {
                 compile_data_4(LD_IX_N_0, LD_IX_N_1, offset as u8, val as u8, None)
             }),
             _ => unimplemented_instr(&inst),

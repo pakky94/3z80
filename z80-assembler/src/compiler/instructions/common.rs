@@ -1,5 +1,8 @@
-use crate::compiler::instructions::{CompileData, CompileError, Placeholder, PlaceholderType};
-use crate::domain::enums::ShortReg;
+use crate::compiler::instructions::{
+    CompileData, CompileError, CompileErrorType, Placeholder, PlaceholderType,
+};
+use crate::domain::enums::{ShortReg, WideReg};
+use crate::domain::Argument;
 
 pub fn to_3bit_code(sr: ShortReg) -> u8 {
     match sr {
@@ -11,6 +14,31 @@ pub fn to_3bit_code(sr: ShortReg) -> u8 {
         ShortReg::H => 0b100,
         ShortReg::L => 0b101,
     }
+}
+
+pub fn to_2bit_code(wr: WideReg) -> Result<u8, CompileError> {
+    match wr {
+        WideReg::BC => Ok(0b00),
+        WideReg::DE => Ok(0b01),
+        WideReg::HL => Ok(0b10),
+        WideReg::SP => Ok(0b11),
+        WideReg::IX => Err(CompileError {
+            error: CompileErrorType::UnexpectedArgument(Argument::WideReg(wr)),
+            instr: None,
+        }),
+        WideReg::IY => Err(CompileError {
+            error: CompileErrorType::UnexpectedArgument(Argument::WideReg(wr)),
+            instr: None,
+        }),
+    }
+}
+
+pub fn low_byte(val: u16) -> u8 {
+    (val % 256) as u8
+}
+
+pub fn high_byte(val: u16) -> u8 {
+    (val / 256) as u8
 }
 
 pub fn compile_data_1(

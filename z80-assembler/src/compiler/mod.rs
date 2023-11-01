@@ -40,12 +40,13 @@ where
             let res = (Parser::new(&source)).parse()?;
 
             for i in res.items {
-                self.process_item(i)?
+                self.process_item(i)?;
             }
         }
 
         for ph in self.placeholders.into_iter() {
-            let addr = self.label_map
+            let addr = self
+                .label_map
                 .get(ph.label.as_str())
                 .ok_or(label_not_found(&ph))?;
 
@@ -63,17 +64,17 @@ where
         Ok(self.out)
     }
 
-    fn process_item(
-        &mut self,
-        item: ParseItem,
-    ) -> Result<(), CompileError> {
+    fn process_item(&mut self, item: ParseItem) -> Result<(), CompileError> {
         Ok(match item {
             ParseItem::Label(l) => {
                 self.label_map.insert(l.name, self.idx);
                 ()
             }
             ParseItem::Instruction(inst) => {
-                let data = compile_instruction(&inst, self.idx)?;
+                let data = compile_instruction(&inst, self.idx).map_err(|err| CompileError {
+                    error: err.error,
+                    instr: Some(inst.clone()),
+                })?;
                 for i in 0..data.len {
                     self.out[self.idx] = data.data[i as usize];
                     self.idx += 1;
@@ -166,18 +167,21 @@ ld l, (IY + a3h)
 
     #[test]
     fn label_not_found_error() {
-        let compiler = Compiler::new(InMemorySourceProvider {
-            files: vec![(
-                SourceHeader {
-                    filename: "main.z80".to_string(),
-                },
-                r#"
+        let compiler = Compiler::new(
+            InMemorySourceProvider {
+                files: vec![(
+                    SourceHeader {
+                        filename: "main.z80".to_string(),
+                    },
+                    r#"
 .label1: 12h
 ld a, *missing_label
 "#
-                .to_string(),
-            )],
-        }, 1024);
+                    .to_string(),
+                )],
+            },
+            1024,
+        );
 
         assert_eq!(
             CompileError {
@@ -186,6 +190,33 @@ ld a, *missing_label
             },
             compiler.compile().unwrap_err()
         )
+    }
+
+    #[test]
+    #[rustfmt::skip]
+    fn test_compile_wide_registers() {
+        let compiler = Compiler::new(InMemorySourceProvider {
+            files: vec![(
+                SourceHeader { filename: "main.z80".to_string(), },
+                r#"
+ld HL, 1234h
+ld IX, 2345h
+"#.to_string(),
+            )],
+        }, 1024);
+
+        compare_memory(
+            vec![
+                0b00100001,
+                0b00110100,
+                0b00010010,
+                0b11011101,
+                0b00100001,
+                0b01000101,
+                0b00100011,
+            ],
+            compiler.compile().unwrap(),
+        );
     }
 
     fn compare_memory(expected: Vec<u8>, actual: Vec<u8>) {

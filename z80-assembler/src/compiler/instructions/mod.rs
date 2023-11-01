@@ -3,7 +3,7 @@ pub use crate::compiler::instructions::errors::{label_not_found, CompileError, C
 use crate::compiler::instructions::inst_ld::compile_ld;
 use crate::domain::Instruction;
 
-mod common;
+pub mod common;
 mod errors;
 mod inst_ld;
 

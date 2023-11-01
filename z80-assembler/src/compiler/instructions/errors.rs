@@ -1,5 +1,5 @@
 use crate::compiler::instructions::{CompileData, Placeholder};
-use crate::domain::Instruction;
+use crate::domain::{Argument, Instruction};
 use crate::parser::ParseError;
 
 #[derive(Debug, Eq, PartialEq)]
@@ -13,6 +13,7 @@ pub enum CompileErrorType {
     ParseError(ParseError),
     ExpectedShortArgument(usize, u16),
     LabelNotFound(String, usize),
+    UnexpectedArgument(Argument),
 }
 
 impl From<ParseError> for CompileError {
@@ -41,24 +42,19 @@ pub fn label_not_found(ph: &Placeholder) -> CompileError {
     }
 }
 
-pub fn guard_values_short<T>(
-    instr: &Instruction,
-    val1: u16,
-    val2: u16,
-    f: T,
-) -> Result<CompileData, CompileError>
+pub fn guard_values_short<T>(val1: u16, val2: u16, f: T) -> Result<CompileData, CompileError>
 where
     T: FnOnce() -> Result<CompileData, CompileError>,
 {
     if val1 >= 256 {
         Err(CompileError {
             error: CompileErrorType::ExpectedShortArgument(0, val1),
-            instr: Some(instr.clone()),
+            instr: None,
         })
     } else if val2 >= 256 {
         Err(CompileError {
             error: CompileErrorType::ExpectedShortArgument(1, val2),
-            instr: Some(instr.clone()),
+            instr: None,
         })
     } else {
         f()
