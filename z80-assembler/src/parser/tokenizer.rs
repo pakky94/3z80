@@ -45,6 +45,20 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
+    pub fn expect_peek(&mut self, expected: Token) -> Result<(), ParseError> {
+        let actual = self.peek()?;
+        if actual == expected {
+            Ok(())
+        } else {
+            Err(ParseError::UnexpectedToken(UnexpectedToken {
+                expected,
+                actual,
+                line: self.curr_line,
+                char: 0,
+            }))
+        }
+    }
+
     pub fn next(&mut self) -> Result<Token, ParseError> {
         if let Some(t) = &self.head {
             let temp = (*t).clone();
@@ -165,7 +179,10 @@ ADD    INC
         assert_eq!(Token::Identifier("INC".to_string()), parser.next().unwrap());
         assert_eq!(Token::NewLine, parser.next().unwrap());
         assert_eq!(Token::Dot, parser.next().unwrap());
-        assert_eq!(Token::Identifier("label2".to_string()), parser.next().unwrap());
+        assert_eq!(
+            Token::Identifier("label2".to_string()),
+            parser.next().unwrap()
+        );
         assert_eq!(Token::Colon, parser.next().unwrap());
     }
 

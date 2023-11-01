@@ -18,3 +18,15 @@ pub enum WideReg {
     IX,
     IY,
 }
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum Condition {
+    NZ,
+    Z,
+    NC,
+    C,
+    PO,
+    PE,
+    P,
+    M,
+}

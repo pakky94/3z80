@@ -1,5 +1,6 @@
-use crate::domain::enums::{ShortReg, WideReg};
+use crate::domain::enums::{Condition, ShortReg, WideReg};
 
+pub mod conditions;
 pub mod enums;
 pub mod register;
 
@@ -27,6 +28,7 @@ pub enum Argument {
     LabelAddress(String),
     RegAddress(WideReg),
     RegOffsetAddress(WideReg, u16),
+    Condition(Condition),
 }
 
 #[derive(Debug, Eq, PartialEq)]

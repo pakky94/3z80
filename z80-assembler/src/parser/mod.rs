@@ -1,5 +1,6 @@
 use crate::domain::register::{parse_register, ParsedRegister};
 use crate::domain::*;
+use crate::domain::conditions::{condition_allowed, parse_condition};
 use crate::parser::errors::{ParseError, UnexpectedToken};
 use crate::parser::token::Token;
 use crate::parser::tokenizer::Tokenizer;
@@ -42,6 +43,7 @@ impl<'a> Parser<'a> {
                 Token::Comma => unimplemented!("unexpected comma {:?}", self.items),
                 Token::NewLine => {
                     self.tokenizer.next()?;
+                    self.pos += 1;
                     continue;
                 }
                 Token::EOF => break,
@@ -82,16 +84,16 @@ impl<'a> Parser<'a> {
             return Ok(ParseItem::Instruction(inst));
         }
 
-        inst.arg0 = self.parse_argument()?;
+        inst.arg0 = self.parse_argument(&inst.opcode)?;
 
         if self.tokenizer.peek()? != Token::Comma {
-            self.tokenizer.expect(Token::NewLine)?;
+            self.tokenizer.expect_peek(Token::NewLine)?;
             return Ok(ParseItem::Instruction(inst));
         }
 
         self.tokenizer.next()?; // Token::Comma
 
-        inst.arg1 = self.parse_argument()?;
+        inst.arg1 = self.parse_argument(&inst.opcode)?;
 
         let t = self.tokenizer.peek()?;
         if t != Token::NewLine && t != Token::EOF {
@@ -106,7 +108,7 @@ impl<'a> Parser<'a> {
         Ok(ParseItem::Instruction(inst))
     }
 
-    fn parse_argument(&mut self) -> Result<Argument, ParseError> {
+    fn parse_argument(&mut self, code: &str) -> Result<Argument, ParseError> {
         match self.tokenizer.next()? {
             Token::Value(v) => Ok(Argument::Value(v)),
             Token::OpenParen => match self.tokenizer.next()? {
@@ -136,16 +138,22 @@ impl<'a> Parser<'a> {
                     self.tokenizer.expect(Token::CloseParen)?;
                     Ok(Argument::DirectAddress(val))
                 }
-                _ => unimplemented!()
-            },
-            Token::Identifier(i) => Ok(match parse_register(&i) {
-                ParsedRegister::ShortReg(sr) => Argument::ShortReg(sr),
-                ParsedRegister::WideReg(wr) => Argument::WideReg(wr),
                 _ => unimplemented!(),
-            }),
+            },
+            Token::Identifier(i) => {
+                if condition_allowed(code) {
+                    if let Some(c) = parse_condition(&i) {
+                        return Ok(Argument::Condition(c));
+                    }
+                }
+                Ok(match parse_register(&i) {
+                    ParsedRegister::ShortReg(sr) => Argument::ShortReg(sr),
+                    ParsedRegister::WideReg(wr) => Argument::WideReg(wr),
+                    _ => unimplemented!(),
+                })
+            },
             Token::Amp => {
                 if let Token::Identifier(i) = self.tokenizer.next()? {
-                    eprintln!("&{:?}", i);
                     Ok(Argument::LabelAddress(i))
                 } else {
                     unimplemented!("expected identifier")
@@ -153,7 +161,6 @@ impl<'a> Parser<'a> {
             }
             Token::Asterisk => {
                 if let Token::Identifier(i) = self.tokenizer.next()? {
-                    eprintln!("*{:?}", i);
                     Ok(Argument::LabelValue(i))
                 } else {
                     unimplemented!("expected identifier")
@@ -170,7 +177,7 @@ pub fn test() {
 
 #[cfg(test)]
 mod tests {
-    use crate::domain::enums::{ShortReg, WideReg};
+    use crate::domain::enums::{Condition, ShortReg, WideReg};
     use crate::domain::Label;
     use crate::parser::{Argument, Instruction, ParseItem, Parser};
 
@@ -289,6 +296,51 @@ LD BC, *label2
                 arg1: Argument::LabelValue("label2".to_string()),
             }),
             *res.items.get(1).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_parse_condition() {
+        let parser = Parser::new(
+            r#"
+CALL C, *label1
+JP PO, 1234h
+JR NZ, a7h
+RET M
+"#,
+        );
+        let res = parser.parse().unwrap();
+        assert_eq!(
+            ParseItem::Instruction(Instruction {
+                opcode: "call".to_string(),
+                arg0: Argument::Condition(Condition::C),
+                arg1: Argument::LabelValue("label1".to_string()),
+            }),
+            *res.items.get(0).unwrap()
+        );
+        assert_eq!(
+            ParseItem::Instruction(Instruction {
+                opcode: "jp".to_string(),
+                arg0: Argument::Condition(Condition::PO),
+                arg1: Argument::Value(4660),
+            }),
+            *res.items.get(1).unwrap()
+        );
+        assert_eq!(
+            ParseItem::Instruction(Instruction {
+                opcode: "jr".to_string(),
+                arg0: Argument::Condition(Condition::NZ),
+                arg1: Argument::Value(167),
+            }),
+            *res.items.get(2).unwrap()
+        );
+        assert_eq!(
+            ParseItem::Instruction(Instruction {
+                opcode: "ret".to_string(),
+                arg0: Argument::Condition(Condition::M),
+                arg1: Argument::None,
+            }),
+            *res.items.get(3).unwrap()
         );
     }
 }
