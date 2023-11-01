@@ -197,8 +197,8 @@ ld a, *missing_label
         for (ia, a) in actual.iter().enumerate() {
             match expected.get(ia) {
                 None => {
-                    eprintln!(" {:4X?} | {:#04X?} | {:#04X?}", ia, 0, a);
                     if *a != 0 {
+                        eprintln!(" {:4X?} | {:#04X?} | {:#04X?}", ia, 0, a);
                         panic!()
                     }
                 }
