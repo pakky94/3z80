@@ -143,7 +143,22 @@ impl<'a> Parser<'a> {
                 ParsedRegister::WideReg(wr) => Argument::WideReg(wr),
                 _ => unimplemented!(),
             }),
-            Token::NewLine => unreachable!(),
+            Token::Amp => {
+                if let Token::Identifier(i) = self.tokenizer.next()? {
+                    eprintln!("&{:?}", i);
+                    Ok(Argument::LabelAddress(i))
+                } else {
+                    unimplemented!("expected identifier")
+                }
+            }
+            Token::Asterisk => {
+                if let Token::Identifier(i) = self.tokenizer.next()? {
+                    eprintln!("*{:?}", i);
+                    Ok(Argument::LabelValue(i))
+                } else {
+                    unimplemented!("expected identifier")
+                }
+            }
             _ => unimplemented!(),
         }
     }
@@ -247,6 +262,31 @@ add b, 8h"#,
                 opcode: "add".to_string(),
                 arg0: Argument::ShortReg(ShortReg::A),
                 arg1: Argument::Value(169),
+            }),
+            *res.items.get(1).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_parse_label_argument() {
+        let parser = Parser::new(r#"
+CALL &label1
+LD BC, *label2
+"#);
+        let res = parser.parse().unwrap();
+        assert_eq!(
+            ParseItem::Instruction(Instruction {
+                opcode: "call".to_string(),
+                arg0: Argument::LabelAddress("label1".to_string()),
+                arg1: Argument::None,
+            }),
+            *res.items.get(0).unwrap()
+        );
+        assert_eq!(
+            ParseItem::Instruction(Instruction {
+                opcode: "ld".to_string(),
+                arg0: Argument::WideReg(WideReg::BC),
+                arg1: Argument::LabelValue("label2".to_string()),
             }),
             *res.items.get(1).unwrap()
         );

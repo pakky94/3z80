@@ -8,6 +8,8 @@ pub enum Token {
     Comma,
     Dot,
     Colon,
+    Amp,
+    Asterisk,
     NewLine,
     EOF,
 }

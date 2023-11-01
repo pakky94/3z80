@@ -16,13 +16,15 @@ pub struct Instruction {
     pub arg1: Argument,
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Argument {
     None,
     ShortReg(ShortReg),
     WideReg(WideReg),
     Value(u16),
+    LabelValue(String),
     DirectAddress(u16),
+    LabelAddress(String),
     RegAddress(WideReg),
     RegOffsetAddress(WideReg, u16),
 }
