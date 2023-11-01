@@ -14,7 +14,7 @@ mod tokenizer;
 pub struct Parser<'a> {
     source: &'a str,
     tokenizer: Tokenizer<'a>,
-    pos: usize,
+    line: usize,
     items: Vec<ParseItem>,
 }
 
@@ -29,7 +29,7 @@ impl<'a> Parser<'a> {
             source,
             tokenizer: Tokenizer::new(source),
             items: Vec::new(),
-            pos: 0,
+            line: 1,
         }
     }
 
@@ -43,7 +43,7 @@ impl<'a> Parser<'a> {
                 Token::Value(_, _) => self.parse_data()?,
                 Token::NewLine => {
                     self.tokenizer.next()?;
-                    self.pos += 1;
+                    self.line += 1;
                     continue;
                 }
                 Token::EOF => break,
@@ -61,7 +61,7 @@ impl<'a> Parser<'a> {
             self.tokenizer.expect(Token::Colon)?;
             Ok(ParseItem::Label(Label {
                 name: l.to_string(),
-                target: self.pos,
+                line: self.line,
             }))
         } else {
             unimplemented!("expected identifier token")
@@ -78,6 +78,7 @@ impl<'a> Parser<'a> {
             opcode: code.to_lowercase(),
             arg0: Argument::None,
             arg1: Argument::None,
+            line: self.line,
         };
 
         if let Ok(Token::NewLine) = self.tokenizer.peek() {
@@ -100,7 +101,7 @@ impl<'a> Parser<'a> {
             return Err(ParseError::UnexpectedToken(UnexpectedToken {
                 expected: Token::NewLine,
                 actual: t,
-                line: 0,
+                line: self.line,
                 char: 0,
             }));
         }
@@ -235,6 +236,7 @@ add b, 8h"#,
                 opcode: "ld".to_string(),
                 arg0: Argument::ShortReg(ShortReg::A),
                 arg1: Argument::RegAddress(WideReg::IX),
+                line: 1,
             }),
             *parser.parse().unwrap().items.get(0).unwrap()
         );
@@ -248,6 +250,7 @@ add b, 8h"#,
                 opcode: "ld".to_string(),
                 arg0: Argument::ShortReg(ShortReg::A),
                 arg1: Argument::RegOffsetAddress(WideReg::IX, 21),
+                line: 1,
             }),
             *parser.parse().unwrap().items.get(0).unwrap()
         );
@@ -261,6 +264,7 @@ add b, 8h"#,
                 opcode: "ld".to_string(),
                 arg0: Argument::WideReg(WideReg::BC),
                 arg1: Argument::DirectAddress(41669),
+                line: 1,
             }),
             *parser.parse().unwrap().items.get(0).unwrap()
         );
@@ -273,7 +277,7 @@ add b, 8h"#,
         assert_eq!(
             ParseItem::Label(Label {
                 name: "my_label".to_string(),
-                target: 0,
+                line: 1,
             }),
             *res.items.get(0).unwrap()
         );
@@ -282,6 +286,7 @@ add b, 8h"#,
                 opcode: "add".to_string(),
                 arg0: Argument::ShortReg(ShortReg::A),
                 arg1: Argument::Value(169),
+                line: 1,
             }),
             *res.items.get(1).unwrap()
         );
@@ -301,6 +306,7 @@ LD BC, *label2
                 opcode: "call".to_string(),
                 arg0: Argument::LabelAddress("label1".to_string()),
                 arg1: Argument::None,
+                line: 2,
             }),
             *res.items.get(0).unwrap()
         );
@@ -309,6 +315,7 @@ LD BC, *label2
                 opcode: "ld".to_string(),
                 arg0: Argument::WideReg(WideReg::BC),
                 arg1: Argument::LabelValue("label2".to_string()),
+                line: 3,
             }),
             *res.items.get(1).unwrap()
         );
@@ -330,6 +337,7 @@ RET M
                 opcode: "call".to_string(),
                 arg0: Argument::Condition(Condition::C),
                 arg1: Argument::LabelValue("label1".to_string()),
+                line: 2,
             }),
             *res.items.get(0).unwrap()
         );
@@ -338,6 +346,7 @@ RET M
                 opcode: "jp".to_string(),
                 arg0: Argument::Condition(Condition::PO),
                 arg1: Argument::Value(4660),
+                line: 3,
             }),
             *res.items.get(1).unwrap()
         );
@@ -346,6 +355,7 @@ RET M
                 opcode: "jr".to_string(),
                 arg0: Argument::Condition(Condition::NZ),
                 arg1: Argument::Value(167),
+                line: 4,
             }),
             *res.items.get(2).unwrap()
         );
@@ -354,6 +364,7 @@ RET M
                 opcode: "ret".to_string(),
                 arg0: Argument::Condition(Condition::M),
                 arg1: Argument::None,
+                line: 5,
             }),
             *res.items.get(3).unwrap()
         );

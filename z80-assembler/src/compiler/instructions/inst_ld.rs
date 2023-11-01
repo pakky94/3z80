@@ -1,5 +1,6 @@
 use crate::compiler::instructions::common::*;
 use crate::compiler::instructions::CompileResult;
+use crate::compiler::instructions::errors::unimplemented_instr;
 use crate::domain::enums::WideReg;
 use crate::domain::{Argument, Instruction};
 

@@ -1,9 +1,10 @@
-use crate::compiler::instructions::common::unimplemented_instr;
+use crate::compiler::instructions::errors::unimplemented_instr;
 use crate::compiler::instructions::inst_ld::compile_ld;
 use crate::domain::Instruction;
 
 mod common;
 mod inst_ld;
+mod errors;
 
 pub enum CompileResult {
     Data(CompileData),

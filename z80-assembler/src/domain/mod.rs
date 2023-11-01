@@ -16,6 +16,7 @@ pub struct Instruction {
     pub opcode: String,
     pub arg0: Argument,
     pub arg1: Argument,
+    pub line: usize,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -35,5 +36,5 @@ pub enum Argument {
 #[derive(Debug, Eq, PartialEq)]
 pub struct Label {
     pub name: String,
-    pub target: usize,
+    pub line: usize,
 }
