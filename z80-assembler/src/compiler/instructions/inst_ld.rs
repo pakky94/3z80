@@ -6,7 +6,7 @@ use crate::domain::{Argument, Instruction};
 
 const LD_R_R: u8 = 0b01000000;
 const LD_R_N: u8 = 0b00000110;
-const LD_R_NN: u8 = 0b00111010;
+const LD_A_NN: u8 = 0b00111010;
 const LD_R_HL: u8 = 0b01000110;
 const LD_R_IX_0: u8 = 0b11011101;
 const LD_R_IX_1: u8 = 0b01000110;
@@ -34,10 +34,10 @@ pub fn compile_ld(inst: &Instruction, idx: usize) -> Result<CompileData, Compile
             compile_data_2(opcode, 0, ph_value(idx + 1, label.clone(), inst.line))
         }
         (Argument::ShortReg(ShortReg::A), Argument::LabelAddress(label)) => {
-            compile_data_3(LD_R_NN, 0, 0, ph_addr(idx + 1, label.clone(), inst.line))
+            compile_data_3(LD_A_NN, 0, 0, ph_addr(idx + 1, label.clone(), inst.line))
         }
         (Argument::ShortReg(ShortReg::A), Argument::DirectAddress(addr)) => {
-            compile_data_3(LD_R_NN, low_byte(*addr), high_byte(*addr), None)
+            compile_data_3(LD_A_NN, low_byte(*addr), high_byte(*addr), None)
         }
         (Argument::ShortReg(sr0), Argument::RegAddress(WideReg::HL)) => {
             let opcode = LD_R_HL | (to_3bit_code(*sr0) << 3);
