@@ -1,3 +1,4 @@
+use crate::compiler::instructions::common::unimplemented_instr;
 use crate::compiler::instructions::inst_ld::compile_ld;
 use crate::domain::Instruction;
 
@@ -30,6 +31,6 @@ pub enum PlaceholderType {
 pub fn compile_instruction(inst: Instruction, idx: usize) -> CompileResult {
     match inst.opcode.as_str() {
         "ld" => compile_ld(inst, idx),
-        _ => unimplemented!(),
+        _ => unimplemented_instr(&inst),
     }
 }

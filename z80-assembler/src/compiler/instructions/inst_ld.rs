@@ -54,7 +54,7 @@ pub fn compile_ld(inst: Instruction, idx: usize) -> CompileResult {
                     unimplemented!("error handling")
                 }
             }
-            _ => unimplemented!(),
+            _ => unimplemented_instr(&inst),
         },
         Argument::RegOffsetAddress(WideReg::IX, offset) => match inst.arg1 {
             Argument::Value(val) => {
@@ -64,8 +64,8 @@ pub fn compile_ld(inst: Instruction, idx: usize) -> CompileResult {
                     unimplemented!("error handling")
                 }
             }
-            _ => unimplemented!(),
+            _ => unimplemented_instr(&inst),
         },
-        _ => unimplemented!(),
+        _ => unimplemented_instr(&inst),
     }
 }

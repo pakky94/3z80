@@ -1,5 +1,6 @@
 use crate::compiler::instructions::{CompileData, CompileResult, Placeholder, PlaceholderType};
 use crate::domain::enums::ShortReg;
+use crate::domain::Instruction;
 
 pub fn to_3bit_code(sr: ShortReg) -> u8 {
     match sr {
@@ -67,4 +68,13 @@ pub fn ph_addr(idx: usize, label: String) -> Option<Placeholder> {
         size: 2,
         ph_type: PlaceholderType::Address,
     })
+}
+
+pub fn unimplemented_instr(instr: &Instruction) -> ! {
+    unimplemented!(
+        "unimplemented instruction '{}' arg0: {:?} arg1: {:?}",
+        instr.opcode.to_uppercase(),
+        instr.arg0,
+        instr.arg1
+    )
 }
