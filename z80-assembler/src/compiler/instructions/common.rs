@@ -1,4 +1,4 @@
-use crate::compiler::instructions::{CompileData, CompileResult, Placeholder};
+use crate::compiler::instructions::{CompileData, CompileResult, Placeholder, PlaceholderType};
 use crate::domain::enums::ShortReg;
 
 pub fn to_3bit_code(sr: ShortReg) -> u8 {
@@ -29,9 +29,28 @@ pub fn compile_data_2(b0: u8, b1: u8, placeholder: Option<Placeholder>) -> Compi
     })
 }
 
-pub fn placeholder(idx: usize, label: String) -> Option<Placeholder> {
+pub fn compile_data_3(b0: u8, b1: u8, b2: u8, placeholder: Option<Placeholder>) -> CompileResult {
+    CompileResult::Data(CompileData {
+        len: 3,
+        data: [b0, b1, b2, 0],
+        placeholder,
+    })
+}
+
+pub fn ph_value(idx: usize, label: String) -> Option<Placeholder> {
     Some(Placeholder {
         idx,
         label,
+        size: 1,
+        ph_type: PlaceholderType::Value,
+    })
+}
+
+pub fn ph_addr(idx: usize, label: String) -> Option<Placeholder> {
+    Some(Placeholder {
+        idx,
+        label,
+        size: 2,
+        ph_type: PlaceholderType::Address,
     })
 }

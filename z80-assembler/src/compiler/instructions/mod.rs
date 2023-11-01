@@ -12,12 +12,19 @@ pub enum CompileResult {
 pub struct CompileData {
     pub len: u8,
     pub data: [u8; 4],
-    pub placeholder: Option<Placeholder>
+    pub placeholder: Option<Placeholder>,
 }
 
 pub struct Placeholder {
     pub idx: usize,
     pub label: String,
+    pub size: u8,
+    pub ph_type: PlaceholderType,
+}
+
+pub enum PlaceholderType {
+    Value,
+    Address,
 }
 
 pub fn compile_instruction(inst: Instruction, idx: usize) -> CompileResult {

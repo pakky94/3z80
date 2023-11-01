@@ -1,4 +1,4 @@
-use crate::compiler::instructions::{compile_instruction, CompileResult};
+use crate::compiler::instructions::{compile_instruction, CompileResult, PlaceholderType};
 use crate::compiler::source_provider::SourceProvider;
 use crate::domain::ParseItem;
 use crate::parser::{ParseError, Parser};
@@ -67,7 +67,15 @@ where
 
         for ph in placeholders.into_iter() {
             if let Some(addr) = label_map.get(ph.label.as_str()) {
-                out[ph.idx] = out[*addr];
+                match ph.ph_type {
+                    PlaceholderType::Value => {
+                        out[ph.idx] = out[*addr];
+                    }
+                    PlaceholderType::Address => {
+                        out[ph.idx] = (*addr % 256) as u8;
+                        out[ph.idx + 1] = (*addr / 256) as u8
+                    }
+                }
             } else {
                 unimplemented!("error")
             }
@@ -106,6 +114,7 @@ ld b, 12h
     }
 
     #[test]
+    #[rustfmt::skip]
     fn test_compile_labels() {
         let mut compiler = Compiler::new(InMemorySourceProvider {
             files: vec![(
@@ -116,18 +125,32 @@ ld b, 12h
 .label3: 14h
 .label4: 15h
 ld b, *label3
+ld c, &label4
+ld a, (HL)
+ld e, (IX + 5h)
+ld l, (IY + a3h)
 "#.to_string(),
             )],
         });
 
         compare_memory(
             vec![
-                0b00010010,
-                0b00010011,
+                0b00010010, // label1
+                0b00010011, // label2
+                0b00010100, // label3
+                0b00010101, // label4
+                0b00000110, // ld b, *label3
                 0b00010100,
-                0b00010101,
-                0b00000110,
-                0b00010100,
+                0b00111010, // ld c, &label4
+                0b00000011,
+                0b00000000,
+                0b01111110, // ld a, (HL)
+                0b11011101, // ld e, (IX + 5h)
+                0b01011110,
+                0b00000101,
+                0b11111101, // ld l, (IY + a3h)
+                0b01101110,
+                0b10100011,
             ],
             compiler.compile(1024).unwrap(),
         );
@@ -142,8 +165,8 @@ ld b, *label3
         for (ia, a) in actual.iter().enumerate() {
             match expected.get(ia) {
                 None => {
+                    eprintln!(" {:4X?} | {:#04X?} | {:#04X?}", ia, 0, a);
                     if *a != 0 {
-                        eprintln!("expected: {:?}, actual {:?}", expected, actual);
                         panic!()
                     }
                 }
