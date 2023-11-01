@@ -15,6 +15,15 @@ pub enum CompileErrorType {
     LabelNotFound(String, usize),
 }
 
+impl From<ParseError> for CompileError {
+    fn from(error: ParseError) -> Self {
+        CompileError {
+            error: CompileErrorType::ParseError(error),
+            instr: None,
+        }
+    }
+}
+
 pub fn unimplemented_instr(instr: &Instruction) -> ! {
     unimplemented!(
         "l{} - unimplemented instruction '{}' arg0: {:?} arg1: {:?}",
@@ -25,19 +34,24 @@ pub fn unimplemented_instr(instr: &Instruction) -> ! {
     )
 }
 
-pub fn guard_values_short<T>(val1: u16, val2: u16, f: T) -> Result<CompileData, CompileError>
+pub fn guard_values_short<T>(
+    instr: &Instruction,
+    val1: u16,
+    val2: u16,
+    f: T,
+) -> Result<CompileData, CompileError>
 where
     T: FnOnce() -> Result<CompileData, CompileError>,
 {
     if val1 >= 256 {
         Err(CompileError {
             error: CompileErrorType::ExpectedShortArgument(0, val1),
-            instr: None,
+            instr: Some(instr.clone()),
         })
     } else if val2 >= 256 {
         Err(CompileError {
             error: CompileErrorType::ExpectedShortArgument(1, val2),
-            instr: None,
+            instr: Some(instr.clone()),
         })
     } else {
         f()

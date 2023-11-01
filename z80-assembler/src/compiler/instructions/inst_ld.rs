@@ -22,7 +22,7 @@ pub fn compile_ld(inst: &Instruction, idx: usize) -> Result<CompileData, Compile
                 let opcode = LD_R_R | (to_3bit_code(sr0) << 3) | to_3bit_code(*sr1);
                 compile_data_1(opcode, None)
             }
-            Argument::Value(val) => guard_values_short(0, *val, || {
+            Argument::Value(val) => guard_values_short(inst, 0, *val, || {
                 let opcode = LD_R_N | (to_3bit_code(sr0) << 3);
                 compile_data_2(opcode, *val as u8, None)
             }),
@@ -38,13 +38,13 @@ pub fn compile_ld(inst: &Instruction, idx: usize) -> Result<CompileData, Compile
                 compile_data_1(opcode, None)
             }
             Argument::RegOffsetAddress(WideReg::IX, offset) => {
-                guard_values_short(0, *offset, || {
+                guard_values_short(inst, 0, *offset, || {
                     let o1 = LD_R_IX_1 | (to_3bit_code(sr0) << 3);
                     compile_data_3(LD_R_IX_0, o1, *offset as u8, None)
                 })
             }
             Argument::RegOffsetAddress(WideReg::IY, offset) => {
-                guard_values_short(0, *offset, || {
+                guard_values_short(inst, 0, *offset, || {
                     let o1 = LD_R_IY_1 | (to_3bit_code(sr0) << 3);
                     compile_data_3(LD_R_IY_0, o1, *offset as u8, None)
                 })
@@ -52,7 +52,7 @@ pub fn compile_ld(inst: &Instruction, idx: usize) -> Result<CompileData, Compile
             _ => unimplemented_instr(&inst),
         },
         Argument::RegOffsetAddress(WideReg::IX, offset) => match inst.arg1 {
-            Argument::Value(val) => guard_values_short(offset, val, || {
+            Argument::Value(val) => guard_values_short(inst, offset, val, || {
                 compile_data_4(LD_IX_N_0, LD_IX_N_1, offset as u8, val as u8, None)
             }),
             _ => unimplemented_instr(&inst),

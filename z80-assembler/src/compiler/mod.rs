@@ -32,15 +32,7 @@ where
 
         for file in self.source_provider.file_list() {
             let source = self.source_provider.source(&file.filename);
-            let res = match (Parser::new(&source)).parse() {
-                Ok(r) => r,
-                Err(e) => {
-                    return Err(CompileError {
-                        error: CompileErrorType::ParseError(e),
-                        instr: None,
-                    })
-                }
-            };
+            let res = (Parser::new(&source)).parse()?;
 
             for i in res.items {
                 match i {
@@ -48,21 +40,16 @@ where
                         label_map.insert(l.name, idx);
                         ()
                     }
-                    ParseItem::Instruction(inst) => match compile_instruction(&inst, idx) {
-                        Ok(data) => {
-                            for i in 0..data.len {
-                                out[idx] = data.data[i as usize];
-                                idx += 1;
-                            }
-                            if let Some(p) = data.placeholder {
-                                placeholders.push(p);
-                            }
+                    ParseItem::Instruction(inst) => {
+                        let data = compile_instruction(&inst, idx)?;
+                        for i in 0..data.len {
+                            out[idx] = data.data[i as usize];
+                            idx += 1;
                         }
-                        Err(mut err) => {
-                            err.instr = Some(inst);
-                            return Err(err);
+                        if let Some(p) = data.placeholder {
+                            placeholders.push(p);
                         }
-                    },
+                    }
                     ParseItem::Data(data) => {
                         for b in data.iter() {
                             out[idx] = *b;
