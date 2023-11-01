@@ -1,6 +1,6 @@
+use crate::domain::conditions::{condition_allowed, parse_condition};
 use crate::domain::register::{parse_register, ParsedRegister};
 use crate::domain::*;
-use crate::domain::conditions::{condition_allowed, parse_condition};
 use crate::parser::errors::{ParseError, UnexpectedToken};
 use crate::parser::token::Token;
 use crate::parser::tokenizer::Tokenizer;
@@ -39,8 +39,6 @@ impl<'a> Parser<'a> {
             let r = match t {
                 Token::Dot => self.parse_label()?,
                 Token::Identifier(_) => self.parse_instruction()?,
-                Token::Value(_) => unimplemented!("unexpected wide value {:?}", self.items),
-                Token::Comma => unimplemented!("unexpected comma {:?}", self.items),
                 Token::NewLine => {
                     self.tokenizer.next()?;
                     self.pos += 1;
@@ -111,35 +109,7 @@ impl<'a> Parser<'a> {
     fn parse_argument(&mut self, code: &str) -> Result<Argument, ParseError> {
         match self.tokenizer.next()? {
             Token::Value(v) => Ok(Argument::Value(v)),
-            Token::OpenParen => match self.tokenizer.next()? {
-                Token::Identifier(i) => {
-                    if let Token::Plus = self.tokenizer.peek()? {
-                        self.tokenizer.next()?;
-                        if let Token::Value(offset) = self.tokenizer.next()? {
-                            if let ParsedRegister::WideReg(wr) = parse_register(&i) {
-                                self.tokenizer.expect(Token::CloseParen)?;
-                                Ok(Argument::RegOffsetAddress(wr, offset))
-                            } else {
-                                unimplemented!()
-                            }
-                        } else {
-                            unimplemented!()
-                        }
-                    } else {
-                        if let ParsedRegister::WideReg(wr) = parse_register(&i) {
-                            self.tokenizer.expect(Token::CloseParen)?;
-                            Ok(Argument::RegAddress(wr))
-                        } else {
-                            unimplemented!()
-                        }
-                    }
-                }
-                Token::Value(val) => {
-                    self.tokenizer.expect(Token::CloseParen)?;
-                    Ok(Argument::DirectAddress(val))
-                }
-                _ => unimplemented!(),
-            },
+            Token::OpenParen => self.parse_address_arg(),
             Token::Identifier(i) => {
                 if condition_allowed(code) {
                     if let Some(c) = parse_condition(&i) {
@@ -151,7 +121,7 @@ impl<'a> Parser<'a> {
                     ParsedRegister::WideReg(wr) => Argument::WideReg(wr),
                     _ => unimplemented!(),
                 })
-            },
+            }
             Token::Amp => {
                 if let Token::Identifier(i) = self.tokenizer.next()? {
                     Ok(Argument::LabelAddress(i))
@@ -165,6 +135,38 @@ impl<'a> Parser<'a> {
                 } else {
                     unimplemented!("expected identifier")
                 }
+            }
+            _ => unimplemented!(),
+        }
+    }
+
+    fn parse_address_arg(&mut self) -> Result<Argument, ParseError> {
+        match self.tokenizer.next()? {
+            Token::Identifier(i) => {
+                if let Token::Plus = self.tokenizer.peek()? {
+                    self.tokenizer.next()?;
+                    if let Token::Value(offset) = self.tokenizer.next()? {
+                        if let ParsedRegister::WideReg(wr) = parse_register(&i) {
+                            self.tokenizer.expect(Token::CloseParen)?;
+                            Ok(Argument::RegOffsetAddress(wr, offset))
+                        } else {
+                            unimplemented!()
+                        }
+                    } else {
+                        unimplemented!()
+                    }
+                } else {
+                    if let ParsedRegister::WideReg(wr) = parse_register(&i) {
+                        self.tokenizer.expect(Token::CloseParen)?;
+                        Ok(Argument::RegAddress(wr))
+                    } else {
+                        unimplemented!()
+                    }
+                }
+            }
+            Token::Value(val) => {
+                self.tokenizer.expect(Token::CloseParen)?;
+                Ok(Argument::DirectAddress(val))
             }
             _ => unimplemented!(),
         }
@@ -276,10 +278,12 @@ add b, 8h"#,
 
     #[test]
     fn test_parse_label_argument() {
-        let parser = Parser::new(r#"
+        let parser = Parser::new(
+            r#"
 CALL &label1
 LD BC, *label2
-"#);
+"#,
+        );
         let res = parser.parse().unwrap();
         assert_eq!(
             ParseItem::Instruction(Instruction {
