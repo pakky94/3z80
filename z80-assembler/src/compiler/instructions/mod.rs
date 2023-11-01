@@ -1,15 +1,11 @@
 use crate::compiler::instructions::errors::unimplemented_instr;
+pub use crate::compiler::instructions::errors::{CompileError, CompileErrorType};
 use crate::compiler::instructions::inst_ld::compile_ld;
 use crate::domain::Instruction;
 
 mod common;
-mod inst_ld;
 mod errors;
-
-pub enum CompileResult {
-    Data(CompileData),
-    CompileError,
-}
+mod inst_ld;
 
 pub struct CompileData {
     pub len: u8,
@@ -29,7 +25,7 @@ pub enum PlaceholderType {
     Address,
 }
 
-pub fn compile_instruction(inst: Instruction, idx: usize) -> CompileResult {
+pub fn compile_instruction(inst: &Instruction, idx: usize) -> Result<CompileData, CompileError> {
     match inst.opcode.as_str() {
         "ld" => compile_ld(inst, idx),
         _ => unimplemented_instr(&inst),

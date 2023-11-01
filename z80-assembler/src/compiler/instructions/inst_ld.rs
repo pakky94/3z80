@@ -1,6 +1,6 @@
 use crate::compiler::instructions::common::*;
-use crate::compiler::instructions::CompileResult;
-use crate::compiler::instructions::errors::unimplemented_instr;
+use crate::compiler::instructions::errors::{guard_values_short, unimplemented_instr};
+use crate::compiler::instructions::{CompileData, CompileError};
 use crate::domain::enums::WideReg;
 use crate::domain::{Argument, Instruction};
 
@@ -15,56 +15,46 @@ const LD_R_IY_1: u8 = 0b01000110;
 const LD_IX_N_0: u8 = 0b11011101;
 const LD_IX_N_1: u8 = 0b00110110;
 
-pub fn compile_ld(inst: Instruction, idx: usize) -> CompileResult {
+pub fn compile_ld(inst: &Instruction, idx: usize) -> Result<CompileData, CompileError> {
     match inst.arg0 {
-        Argument::ShortReg(sr0) => match inst.arg1 {
+        Argument::ShortReg(sr0) => match &inst.arg1 {
             Argument::ShortReg(sr1) => {
-                let opcode = LD_R_R | (to_3bit_code(sr0) << 3) | to_3bit_code(sr1);
+                let opcode = LD_R_R | (to_3bit_code(sr0) << 3) | to_3bit_code(*sr1);
                 compile_data_1(opcode, None)
             }
-            Argument::Value(val) => {
-                if val < 256 {
-                    let opcode = LD_R_N | (to_3bit_code(sr0) << 3);
-                    compile_data_2(opcode, val as u8, None)
-                } else {
-                    unimplemented!("error handling")
-                }
-            }
+            Argument::Value(val) => guard_values_short(0, *val, || {
+                let opcode = LD_R_N | (to_3bit_code(sr0) << 3);
+                compile_data_2(opcode, *val as u8, None)
+            }),
             Argument::LabelValue(label) => {
                 let opcode = LD_R_N | (to_3bit_code(sr0) << 3);
-                compile_data_2(opcode, 0, ph_value(idx + 1, label))
+                compile_data_2(opcode, 0, ph_value(idx + 1, label.clone()))
             }
-            Argument::LabelAddress(label) => compile_data_3(LD_R_NN, 0, 0, ph_addr(idx + 1, label)),
+            Argument::LabelAddress(label) => {
+                compile_data_3(LD_R_NN, 0, 0, ph_addr(idx + 1, label.clone()))
+            }
             Argument::RegAddress(WideReg::HL) => {
                 let opcode = LD_R_HL | (to_3bit_code(sr0) << 3);
                 compile_data_1(opcode, None)
             }
             Argument::RegOffsetAddress(WideReg::IX, offset) => {
-                if offset < 256 {
+                guard_values_short(0, *offset, || {
                     let o1 = LD_R_IX_1 | (to_3bit_code(sr0) << 3);
-                    compile_data_3(LD_R_IX_0, o1, offset as u8, None)
-                } else {
-                    unimplemented!("error handling")
-                }
+                    compile_data_3(LD_R_IX_0, o1, *offset as u8, None)
+                })
             }
             Argument::RegOffsetAddress(WideReg::IY, offset) => {
-                if offset < 256 {
+                guard_values_short(0, *offset, || {
                     let o1 = LD_R_IY_1 | (to_3bit_code(sr0) << 3);
-                    compile_data_3(LD_R_IY_0, o1, offset as u8, None)
-                } else {
-                    unimplemented!("error handling")
-                }
+                    compile_data_3(LD_R_IY_0, o1, *offset as u8, None)
+                })
             }
             _ => unimplemented_instr(&inst),
         },
         Argument::RegOffsetAddress(WideReg::IX, offset) => match inst.arg1 {
-            Argument::Value(val) => {
-                if offset < 256 && val < 256 {
-                    compile_data_4(LD_IX_N_0, LD_IX_N_1, offset as u8, val as u8, None)
-                } else {
-                    unimplemented!("error handling")
-                }
-            }
+            Argument::Value(val) => guard_values_short(offset, val, || {
+                compile_data_4(LD_IX_N_0, LD_IX_N_1, offset as u8, val as u8, None)
+            }),
             _ => unimplemented_instr(&inst),
         },
         _ => unimplemented_instr(&inst),

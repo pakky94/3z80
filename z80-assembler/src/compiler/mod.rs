@@ -1,7 +1,9 @@
-use crate::compiler::instructions::{compile_instruction, CompileResult, PlaceholderType};
+use crate::compiler::instructions::{
+    compile_instruction, CompileError, CompileErrorType, PlaceholderType,
+};
 use crate::compiler::source_provider::SourceProvider;
 use crate::domain::ParseItem;
-use crate::parser::{ParseError, Parser};
+use crate::parser::Parser;
 use std::collections::HashMap;
 
 mod instructions;
@@ -22,7 +24,7 @@ where
         Compiler { source_provider }
     }
 
-    pub fn compile(&mut self, capacity: usize) -> Result<Vec<u8>, ParseError> {
+    pub fn compile(&mut self, capacity: usize) -> Result<Vec<u8>, CompileError> {
         let mut out = vec![0u8; capacity];
         let mut idx = 0;
         let mut label_map: HashMap<String, usize> = HashMap::new();
@@ -32,7 +34,12 @@ where
             let source = self.source_provider.source(&file.filename);
             let res = match (Parser::new(&source)).parse() {
                 Ok(r) => r,
-                Err(e) => return Err(e),
+                Err(e) => {
+                    return Err(CompileError {
+                        error: CompileErrorType::ParseError(e),
+                        instr: None,
+                    })
+                }
             };
 
             for i in res.items {
@@ -41,8 +48,8 @@ where
                         label_map.insert(l.name, idx);
                         ()
                     }
-                    ParseItem::Instruction(inst) => {
-                        if let CompileResult::Data(data) = compile_instruction(inst, idx) {
+                    ParseItem::Instruction(inst) => match compile_instruction(&inst, idx) {
+                        Ok(data) => {
                             for i in 0..data.len {
                                 out[idx] = data.data[i as usize];
                                 idx += 1;
@@ -50,11 +57,12 @@ where
                             if let Some(p) = data.placeholder {
                                 placeholders.push(p);
                             }
-                        } else {
-                            unimplemented!()
                         }
-                        ()
-                    }
+                        Err(mut err) => {
+                            err.instr = Some(inst);
+                            return Err(err);
+                        }
+                    },
                     ParseItem::Data(data) => {
                         for b in data.iter() {
                             out[idx] = *b;
