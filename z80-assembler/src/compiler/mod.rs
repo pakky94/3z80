@@ -1,4 +1,6 @@
-use crate::compiler::instructions::{compile_instruction, CompileError, label_not_found, PlaceholderType};
+use crate::compiler::instructions::{
+    compile_instruction, label_not_found, CompileError, Placeholder, PlaceholderType,
+};
 use crate::compiler::source_provider::SourceProvider;
 use crate::domain::ParseItem;
 use crate::parser::Parser;
@@ -12,69 +14,81 @@ where
     T: SourceProvider,
 {
     source_provider: T,
+    out: Vec<u8>,
+    idx: usize,
+    label_map: HashMap<String, usize>,
+    placeholders: Vec<Placeholder>,
 }
 
 impl<T> Compiler<T>
 where
     T: SourceProvider,
 {
-    pub fn new(source_provider: T) -> Self {
-        Compiler { source_provider }
+    pub fn new(source_provider: T, capacity: usize) -> Self {
+        Compiler {
+            source_provider,
+            out: vec![0u8; capacity],
+            idx: 0,
+            label_map: HashMap::new(),
+            placeholders: vec![],
+        }
     }
 
-    pub fn compile(&mut self, capacity: usize) -> Result<Vec<u8>, CompileError> {
-        let mut out = vec![0u8; capacity];
-        let mut idx = 0;
-        let mut label_map: HashMap<String, usize> = HashMap::new();
-        let mut placeholders = vec![];
-
+    pub fn compile(mut self) -> Result<Vec<u8>, CompileError> {
         for file in self.source_provider.file_list() {
             let source = self.source_provider.source(&file.filename);
             let res = (Parser::new(&source)).parse()?;
 
             for i in res.items {
-                match i {
-                    ParseItem::Label(l) => {
-                        label_map.insert(l.name, idx);
-                        ()
-                    }
-                    ParseItem::Instruction(inst) => {
-                        let data = compile_instruction(&inst, idx)?;
-                        for i in 0..data.len {
-                            out[idx] = data.data[i as usize];
-                            idx += 1;
-                        }
-                        if let Some(p) = data.placeholder {
-                            placeholders.push(p);
-                        }
-                    }
-                    ParseItem::Data(data) => {
-                        for b in data.iter() {
-                            out[idx] = *b;
-                            idx += 1;
-                        }
-                    }
-                }
+                self.process_item(i)?
             }
         }
 
-        for ph in placeholders.into_iter() {
-            let addr = label_map
+        for ph in self.placeholders.into_iter() {
+            let addr = self.label_map
                 .get(ph.label.as_str())
-                .ok_or(label_not_found(&ph));
+                .ok_or(label_not_found(&ph))?;
 
             match ph.ph_type {
                 PlaceholderType::Value => {
-                    out[ph.idx] = out[*addr];
+                    self.out[ph.idx] = self.out[*addr];
                 }
                 PlaceholderType::Address => {
-                    out[ph.idx] = (*addr % 256) as u8;
-                    out[ph.idx + 1] = (*addr / 256) as u8
+                    self.out[ph.idx] = (*addr % 256) as u8;
+                    self.out[ph.idx + 1] = (*addr / 256) as u8
                 }
             }
         }
 
-        Ok(out)
+        Ok(self.out)
+    }
+
+    fn process_item(
+        &mut self,
+        item: ParseItem,
+    ) -> Result<(), CompileError> {
+        Ok(match item {
+            ParseItem::Label(l) => {
+                self.label_map.insert(l.name, self.idx);
+                ()
+            }
+            ParseItem::Instruction(inst) => {
+                let data = compile_instruction(&inst, self.idx)?;
+                for i in 0..data.len {
+                    self.out[self.idx] = data.data[i as usize];
+                    self.idx += 1;
+                }
+                if let Some(p) = data.placeholder {
+                    self.placeholders.push(p);
+                }
+            }
+            ParseItem::Data(data) => {
+                for b in data.iter() {
+                    self.out[self.idx] = *b;
+                    self.idx += 1;
+                }
+            }
+        })
     }
 }
 
@@ -95,7 +109,7 @@ ld A, C
 ld b, 12h
 "#.to_string(),
             )],
-        });
+        }, 1024);
 
         compare_memory(
             vec![
@@ -103,7 +117,7 @@ ld b, 12h
                 0b00000110,
                 0b00010010
             ],
-            compiler.compile(1024).unwrap(),
+            compiler.compile().unwrap(),
         );
     }
 
@@ -125,7 +139,7 @@ ld e, (IX + 5h)
 ld l, (IY + a3h)
 "#.to_string(),
             )],
-        });
+        }, 1024);
 
         compare_memory(
             vec![
@@ -146,7 +160,7 @@ ld l, (IY + a3h)
                 0b01101110,
                 0b10100011,
             ],
-            compiler.compile(1024).unwrap(),
+            compiler.compile().unwrap(),
         );
     }
 
@@ -163,14 +177,14 @@ ld a, *missing_label
 "#
                 .to_string(),
             )],
-        });
+        }, 1024);
 
         assert_eq!(
             CompileError {
                 error: CompileErrorType::LabelNotFound("missing_label".to_string(), 3),
                 instr: None,
             },
-            compiler.compile(1024).unwrap_err()
+            compiler.compile().unwrap_err()
         )
     }
 
