@@ -1,6 +1,4 @@
-use crate::compiler::instructions::{
-    compile_instruction, CompileError, CompileErrorType, PlaceholderType,
-};
+use crate::compiler::instructions::{compile_instruction, CompileError, label_not_found, PlaceholderType};
 use crate::compiler::source_provider::SourceProvider;
 use crate::domain::ParseItem;
 use crate::parser::Parser;
@@ -61,21 +59,18 @@ where
         }
 
         for ph in placeholders.into_iter() {
-            if let Some(addr) = label_map.get(ph.label.as_str()) {
-                match ph.ph_type {
-                    PlaceholderType::Value => {
-                        out[ph.idx] = out[*addr];
-                    }
-                    PlaceholderType::Address => {
-                        out[ph.idx] = (*addr % 256) as u8;
-                        out[ph.idx + 1] = (*addr / 256) as u8
-                    }
+            let addr = label_map
+                .get(ph.label.as_str())
+                .ok_or(label_not_found(&ph));
+
+            match ph.ph_type {
+                PlaceholderType::Value => {
+                    out[ph.idx] = out[*addr];
                 }
-            } else {
-                return Err(CompileError {
-                    error: CompileErrorType::LabelNotFound(ph.label, ph.line),
-                    instr: None,
-                });
+                PlaceholderType::Address => {
+                    out[ph.idx] = (*addr % 256) as u8;
+                    out[ph.idx + 1] = (*addr / 256) as u8
+                }
             }
         }
 

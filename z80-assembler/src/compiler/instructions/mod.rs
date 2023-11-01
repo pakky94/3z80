@@ -1,5 +1,5 @@
 use crate::compiler::instructions::errors::unimplemented_instr;
-pub use crate::compiler::instructions::errors::{CompileError, CompileErrorType};
+pub use crate::compiler::instructions::errors::{CompileError, CompileErrorType, label_not_found};
 use crate::compiler::instructions::inst_ld::compile_ld;
 use crate::domain::Instruction;
 

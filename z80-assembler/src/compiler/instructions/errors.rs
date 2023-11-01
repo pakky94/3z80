@@ -1,4 +1,4 @@
-use crate::compiler::instructions::CompileData;
+use crate::compiler::instructions::{CompileData, Placeholder};
 use crate::domain::Instruction;
 use crate::parser::ParseError;
 
@@ -32,6 +32,13 @@ pub fn unimplemented_instr(instr: &Instruction) -> ! {
         instr.arg0,
         instr.arg1
     )
+}
+
+pub fn label_not_found(ph: &Placeholder) -> CompileError {
+    CompileError {
+        error: CompileErrorType::LabelNotFound(ph.label.clone(), ph.line),
+        instr: None,
+    }
 }
 
 pub fn guard_values_short<T>(
