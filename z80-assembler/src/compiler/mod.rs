@@ -134,7 +134,8 @@ ld b, 12h
 .label3: 14h
 .label4: 15h
 ld b, *label3
-ld c, &label4
+ld a, &label4
+ld a, (ABCDh)
 ld a, (HL)
 ld e, (IX + 5h)
 ld l, (IY + a3h)
@@ -150,9 +151,12 @@ ld l, (IY + a3h)
                 0b00010101, // label4
                 0b00000110, // ld b, *label3
                 0b00010100,
-                0b00111010, // ld c, &label4
+                0b00111010, // ld a, &label4
                 0b00000011,
                 0b00000000,
+                0b00111010, // ld a, (ABCDh)
+                0b11001101,
+                0b10101011,
                 0b01111110, // ld a, (HL)
                 0b11011101, // ld e, (IX + 5h)
                 0b01011110,
