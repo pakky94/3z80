@@ -37,6 +37,20 @@ pub fn compile_data_3(b0: u8, b1: u8, b2: u8, placeholder: Option<Placeholder>) 
     })
 }
 
+pub fn compile_data_4(
+    b0: u8,
+    b1: u8,
+    b2: u8,
+    b4: u8,
+    placeholder: Option<Placeholder>,
+) -> CompileResult {
+    CompileResult::Data(CompileData {
+        len: 4,
+        data: [b0, b1, b2, b4],
+        placeholder,
+    })
+}
+
 pub fn ph_value(idx: usize, label: String) -> Option<Placeholder> {
     Some(Placeholder {
         idx,
