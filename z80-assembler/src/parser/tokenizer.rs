@@ -86,7 +86,7 @@ impl<'a> Tokenizer<'a> {
 
         if let Some((_, c)) = self.chars.peek() {
             match c {
-                ',' | '(' | ')' | '+' | '.' | ':' | '&' | '*' => self.parse_single_char(),
+                ',' | '(' | ')' | '+' | '.' | ':' | '&' | '*' | '@' => self.parse_single_char(),
                 'a'..='z' | 'A'..='Z' | '0'..='9' => self.parse_identifier(),
                 _ => Err(ParseError::UnexpectedChar(c.clone(), self.curr_line)),
             }
@@ -127,6 +127,7 @@ impl<'a> Tokenizer<'a> {
             Some((_, ':')) => Ok(Token::Colon),
             Some((_, '&')) => Ok(Token::Amp),
             Some((_, '*')) => Ok(Token::Asterisk),
+            Some((_, '@')) => Ok(Token::At),
             _ => unreachable!(),
         }
     }

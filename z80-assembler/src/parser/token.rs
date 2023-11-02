@@ -10,6 +10,7 @@ pub enum Token {
     Colon,
     Amp,
     Asterisk,
+    At,
     NewLine,
     EOF,
 }

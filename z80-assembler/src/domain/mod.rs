@@ -9,6 +9,7 @@ pub enum ParseItem {
     Label(Label),
     Instruction(Instruction),
     Data(Vec<u8>),
+    Constant(Constant),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -31,10 +32,17 @@ pub enum Argument {
     RegAddress(WideReg),
     RegOffsetAddress(WideReg, u16),
     Condition(Condition),
+    Constant(String),
 }
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Label {
     pub name: String,
     pub line: usize,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub struct Constant {
+    pub name: String,
+    pub value: u16,
 }

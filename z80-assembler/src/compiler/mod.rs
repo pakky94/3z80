@@ -1,8 +1,9 @@
 use crate::compiler::instructions::{
-    compile_instruction, label_not_found, CompileError, Placeholder, PlaceholderType,
+    compile_instruction, label_not_found, CompileError, CompileErrorType, Placeholder,
+    PlaceholderType,
 };
 pub use crate::compiler::source_provider::{InMemorySourceProvider, SourceHeader, SourceProvider};
-use crate::domain::ParseItem;
+use crate::domain::{Argument, Instruction, ParseItem};
 use crate::parser::Parser;
 use std::collections::HashMap;
 
@@ -18,6 +19,7 @@ where
     idx: usize,
     label_map: HashMap<String, usize>,
     placeholders: Vec<Placeholder>,
+    constants: HashMap<String, u16>,
 }
 
 impl<T> Compiler<T>
@@ -31,11 +33,13 @@ where
             idx: 0,
             label_map: HashMap::new(),
             placeholders: vec![],
+            constants: HashMap::new(),
         }
     }
 
     pub fn compile(mut self) -> Result<Vec<u8>, CompileError> {
         for file in self.source_provider.file_list() {
+            self.constants.clear();
             let source = self.source_provider.source(&file.filename);
             let res = (Parser::new(&source)).parse()?;
 
@@ -68,9 +72,9 @@ where
         Ok(match item {
             ParseItem::Label(l) => {
                 self.label_map.insert(l.name, self.idx);
-                ()
             }
             ParseItem::Instruction(inst) => {
+                let inst = self.replace_constants(inst)?;
                 let data = compile_instruction(&inst, self.idx).map_err(|err| CompileError {
                     error: err.error,
                     instr: Some(inst.clone()),
@@ -89,7 +93,38 @@ where
                     self.idx += 1;
                 }
             }
+            ParseItem::Constant(cons) => {
+                self.constants.insert(cons.name, cons.value);
+            }
         })
+    }
+
+    fn replace_constants(&self, inst: Instruction) -> Result<Instruction, CompileError> {
+        let arg0 = self.try_parse_constant(&inst.arg0, &inst)?;
+        let arg1 = self.try_parse_constant(&inst.arg1, &inst)?;
+        Ok(Instruction{
+            opcode: inst.opcode,
+            arg0: arg0.unwrap_or(inst.arg0),
+            arg1: arg1.unwrap_or(inst.arg1),
+            line: inst.line,
+        })
+    }
+
+    fn try_parse_constant(
+        &self,
+        arg: &Argument,
+        inst: &Instruction
+    ) -> Result<Option<Argument>, CompileError> {
+        if let Argument::Constant(c) = arg {
+            Ok(Some(Argument::Value(*self.constants.get(c.as_str()).ok_or(
+                CompileError {
+                    error: CompileErrorType::ConstantNotFound(c.clone()),
+                    instr: Some(inst.clone()),
+                },
+            )?)))
+        } else {
+            Ok(None)
+        }
     }
 }
 
@@ -221,6 +256,34 @@ ld IX, 2345h
                 0b11011101,
                 0b00100001,
                 0b01000101,
+                0b00100011,
+            ],
+            compiler.compile().unwrap(),
+        );
+    }
+
+    #[test]
+    #[rustfmt::skip]
+    fn test_compile_constants() {
+        let compiler = Compiler::new(InMemorySourceProvider {
+            files: vec![(
+                SourceHeader { filename: "main.z80".to_string(), },
+                r#"
+@const1: 2345h
+@const2: 23h
+ld IX, @const1
+LD A, @const2
+"#.to_string(),
+            )],
+        }, 1024);
+
+        compare_memory(
+            vec![
+                0b11011101,
+                0b00100001,
+                0b01000101,
+                0b00100011,
+                0b00111110,
                 0b00100011,
             ],
             compiler.compile().unwrap(),

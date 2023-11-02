@@ -25,7 +25,9 @@ fn main() {
                     )],
                 },
                 64 * 1024,
-            ).compile().unwrap();
+            )
+            .compile()
+            .unwrap();
 
             std::fs::write(dest, res).unwrap();
         }

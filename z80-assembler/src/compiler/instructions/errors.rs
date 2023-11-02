@@ -14,6 +14,7 @@ pub enum CompileErrorType {
     ExpectedShortArgument(usize, u16),
     LabelNotFound(String, usize),
     UnexpectedArgument(Argument),
+    ConstantNotFound(String),
 }
 
 impl From<ParseError> for CompileError {

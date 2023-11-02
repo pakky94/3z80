@@ -44,6 +44,7 @@ impl<'a> Parser<'a> {
                     self.line += 1;
                     continue;
                 }
+                Token::At => self.parse_constant()?,
                 Token::EOF => break,
                 _ => unimplemented!("unexpected token {:?} - {:?}", t, self.items),
             };
@@ -52,7 +53,6 @@ impl<'a> Parser<'a> {
 
         Ok(ParseResult { items: self.items })
     }
-
     fn parse_label(&mut self) -> Result<ParseItem, ParseError> {
         self.tokenizer.next()?;
         if let Ok(Token::Identifier(l)) = self.tokenizer.next() {
@@ -137,6 +137,13 @@ impl<'a> Parser<'a> {
                     unimplemented!("expected identifier")
                 }
             }
+            Token::At => {
+                if let Token::Identifier(i) = self.tokenizer.next()? {
+                    Ok(Argument::Constant(i))
+                } else {
+                    unimplemented!("expected identifier")
+                }
+            }
             _ => unimplemented!(),
         }
     }
@@ -185,12 +192,28 @@ impl<'a> Parser<'a> {
             unreachable!()
         }
     }
+    fn parse_constant(&mut self) -> Result<ParseItem, ParseError> {
+        self.tokenizer.next()?;
+        if let Ok(Token::Identifier(l)) = self.tokenizer.next() {
+            self.tokenizer.expect(Token::Colon)?;
+            if let Token::Value(val, _) = self.tokenizer.next()? {
+                Ok(ParseItem::Constant(Constant {
+                    name: l,
+                    value: val,
+                }))
+            } else {
+                unimplemented!("expected value token")
+            }
+        } else {
+            unimplemented!("expected identifier token")
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::domain::enums::{Condition, ShortReg, WideReg};
-    use crate::domain::Label;
+    use crate::domain::{Constant, Label};
     use crate::parser::{Argument, Instruction, ParseItem, Parser};
 
     #[test]
@@ -380,6 +403,29 @@ RET M
         assert_eq!(
             ParseItem::Data(vec![21u8, 170u8]),
             *res.items.get(3).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_parse_constants() {
+        let parser = Parser::new(
+            r#"
+@const1: 15h
+add a, @const1"#,
+        );
+        let res = parser.parse().unwrap();
+        assert_eq!(ParseItem::Constant(Constant {
+            name: "const1".to_string(),
+            value: 21,
+        }), *res.items.get(0).unwrap());
+        assert_eq!(
+            ParseItem::Instruction(Instruction {
+                opcode: "add".to_string(),
+                arg0: Argument::ShortReg(ShortReg::A),
+                arg1: Argument::Constant("const1".to_string()),
+                line: 3,
+            }),
+            *res.items.get(1).unwrap()
         );
     }
 }
