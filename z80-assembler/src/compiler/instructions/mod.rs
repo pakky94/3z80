@@ -1,15 +1,14 @@
+use crate::compiler::instructions::common::{compile_data_1, compile_data_2};
 use crate::compiler::instructions::errors::unimplemented_instr;
 pub use crate::compiler::instructions::errors::{label_not_found, CompileError, CompileErrorType};
 use crate::compiler::instructions::inst_ex::compile_ex;
-use crate::compiler::instructions::inst_exx::compile_exx;
 use crate::compiler::instructions::inst_ld::compile_ld;
-use crate::domain::Instruction;
+use crate::domain::{Argument, Instruction};
 
 pub mod common;
 mod errors;
 mod inst_ld;
 mod inst_ex;
-mod inst_exx;
 
 pub struct CompileData {
     pub len: u8,
@@ -33,8 +32,20 @@ pub enum PlaceholderType {
 pub fn compile_instruction(inst: &Instruction, idx: usize) -> Result<CompileData, CompileError> {
     match inst.opcode.as_str() {
         "ex" => compile_ex(inst, idx),
-        "exx" => compile_exx(inst, idx),
+        "exx" => inst_no_args(compile_data_1(0b11011001, None), inst),
         "ld" => compile_ld(inst, idx),
+        "ldi" => inst_no_args(compile_data_2(0b11101101, 0b10100000, None), inst),
+        "ldir" => inst_no_args(compile_data_2(0b11101101, 0b10110000, None), inst),
+        "ldd" => inst_no_args(compile_data_2(0b11101101, 0b10101000, None), inst),
+        "lddr" => inst_no_args(compile_data_2(0b11101101, 0b10111000, None), inst),
         _ => unimplemented_instr(&inst),
+    }
+}
+
+fn inst_no_args(data: Result<CompileData, CompileError>, inst: &Instruction) -> Result<CompileData, CompileError> {
+    if let (Argument::None, Argument::None) = (&inst.arg0, &inst.arg1) {
+        data
+    } else {
+        unimplemented_instr(&inst)
     }
 }
