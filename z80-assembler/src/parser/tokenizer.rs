@@ -101,7 +101,7 @@ impl<'a> Tokenizer<'a> {
             loop {
                 if let Some((p, c)) = self.chars.peek() {
                     match c {
-                        'a'..='z' | 'A'..='Z' | '0'..='9' | '_' => {
+                        'a'..='z' | 'A'..='Z' | '0'..='9' | '_' | '\'' => {
                             end = (*p).clone() + 1;
                             let _ = self.chars.next();
                             continue;

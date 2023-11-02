@@ -13,6 +13,8 @@ pub enum ShortReg {
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum WideReg {
+    AF,
+    AFp,
     BC,
     DE,
     HL,
