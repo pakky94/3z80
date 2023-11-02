@@ -1,7 +1,7 @@
 use crate::compiler::instructions::{
     compile_instruction, label_not_found, CompileError, Placeholder, PlaceholderType,
 };
-use crate::compiler::source_provider::SourceProvider;
+pub use crate::compiler::source_provider::{InMemorySourceProvider, SourceHeader, SourceProvider};
 use crate::domain::ParseItem;
 use crate::parser::Parser;
 use std::collections::HashMap;
