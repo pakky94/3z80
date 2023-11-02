@@ -53,6 +53,7 @@ impl<'a> Parser<'a> {
 
         Ok(ParseResult { items: self.items })
     }
+
     fn parse_label(&mut self) -> Result<ParseItem, ParseError> {
         self.tokenizer.next()?;
         if let Ok(Token::Identifier(l)) = self.tokenizer.next() {
@@ -414,10 +415,13 @@ RET M
 add a, @const1"#,
         );
         let res = parser.parse().unwrap();
-        assert_eq!(ParseItem::Constant(Constant {
-            name: "const1".to_string(),
-            value: 21,
-        }), *res.items.get(0).unwrap());
+        assert_eq!(
+            ParseItem::Constant(Constant {
+                name: "const1".to_string(),
+                value: 21,
+            }),
+            *res.items.get(0).unwrap()
+        );
         assert_eq!(
             ParseItem::Instruction(Instruction {
                 opcode: "add".to_string(),

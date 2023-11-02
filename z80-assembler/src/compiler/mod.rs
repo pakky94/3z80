@@ -102,7 +102,7 @@ where
     fn replace_constants(&self, inst: Instruction) -> Result<Instruction, CompileError> {
         let arg0 = self.try_parse_constant(&inst.arg0, &inst)?;
         let arg1 = self.try_parse_constant(&inst.arg1, &inst)?;
-        Ok(Instruction{
+        Ok(Instruction {
             opcode: inst.opcode,
             arg0: arg0.unwrap_or(inst.arg0),
             arg1: arg1.unwrap_or(inst.arg1),
@@ -113,15 +113,15 @@ where
     fn try_parse_constant(
         &self,
         arg: &Argument,
-        inst: &Instruction
+        inst: &Instruction,
     ) -> Result<Option<Argument>, CompileError> {
         if let Argument::Constant(c) = arg {
-            Ok(Some(Argument::Value(*self.constants.get(c.as_str()).ok_or(
-                CompileError {
+            Ok(Some(Argument::Value(
+                *self.constants.get(c.as_str()).ok_or(CompileError {
                     error: CompileErrorType::ConstantNotFound(c.clone()),
                     instr: Some(inst.clone()),
-                },
-            )?)))
+                })?,
+            )))
         } else {
             Ok(None)
         }
