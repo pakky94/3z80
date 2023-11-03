@@ -102,18 +102,14 @@ pub fn inst_cp(
     }
 }
 
-pub fn inst_inc(
-    inst: &Instruction,
-) -> Result<CompileData, CompileError> {
+pub fn inst_inc(inst: &Instruction) -> Result<CompileData, CompileError> {
     match (&inst.arg0, &inst.arg1) {
         (arg, Argument::None) => offset(arg, INC_CODES, inst),
         _ => unimplemented_instr(&inst),
     }
 }
 
-pub fn inst_dec(
-    inst: &Instruction,
-) -> Result<CompileData, CompileError> {
+pub fn inst_dec(inst: &Instruction) -> Result<CompileData, CompileError> {
     match (&inst.arg0, &inst.arg1) {
         (arg, Argument::None) => offset(arg, DEC_CODES, inst),
         _ => unimplemented_instr(&inst),

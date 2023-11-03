@@ -3,12 +3,14 @@ use crate::compiler::instructions::{
     PlaceholderType,
 };
 pub use crate::compiler::source_provider::{InMemorySourceProvider, SourceHeader, SourceProvider};
+use crate::compiler::utilities::relative_delta;
 use crate::domain::{Argument, Instruction, ParseItem};
 use crate::parser::Parser;
 use std::collections::HashMap;
 
 mod instructions;
 mod source_provider;
+mod utilities;
 
 pub struct Compiler<T>
 where
@@ -65,6 +67,12 @@ where
                 PlaceholderType::AbsAddress => {
                     self.out[ph.idx] = (*addr % 256) as u8;
                     self.out[ph.idx + 1] = (*addr / 256) as u8
+                }
+                PlaceholderType::RelAddress => {
+                    self.out[ph.idx] = relative_delta(ph.idx + 1, *addr).ok_or(CompileError {
+                        error: CompileErrorType::UnableToCalculateRelativeJump(ph.clone()),
+                        instr: None,
+                    })?;
                 }
                 t => panic!("Invalid placeholder type: {:?}", t),
             }

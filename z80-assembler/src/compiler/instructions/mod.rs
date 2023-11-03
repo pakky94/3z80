@@ -5,7 +5,10 @@ use crate::compiler::instructions::errors::{
     guard_values_short, unexpected_arguments, unimplemented_instr,
 };
 pub use crate::compiler::instructions::errors::{label_not_found, CompileError, CompileErrorType};
-use crate::compiler::instructions::inst_arith::{inst_adc, inst_add, inst_and, inst_cp, inst_dec, inst_inc, inst_or, inst_sbc, inst_sub, inst_xor};
+use crate::compiler::instructions::inst_arith::{
+    inst_adc, inst_add, inst_and, inst_cp, inst_dec, inst_inc, inst_or, inst_sbc, inst_sub,
+    inst_xor,
+};
 use crate::compiler::instructions::inst_ex::compile_ex;
 use crate::compiler::instructions::inst_im::compile_im;
 use crate::compiler::instructions::inst_ld::compile_ld;
@@ -23,6 +26,7 @@ pub struct CompileData {
     pub data: [u8; 4],
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Placeholder {
     pub idx: usize,
     pub label: String,
@@ -30,7 +34,7 @@ pub struct Placeholder {
     pub line: usize,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PlaceholderType {
     ShortValue,
     WideValue,

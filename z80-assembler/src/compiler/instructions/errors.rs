@@ -15,6 +15,7 @@ pub enum CompileErrorType {
     LabelNotFound(String, usize),
     UnexpectedArgument(Argument),
     ConstantNotFound(String),
+    UnableToCalculateRelativeJump(Placeholder),
 }
 
 impl From<ParseError> for CompileError {

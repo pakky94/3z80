@@ -1,4 +1,6 @@
-use crate::compiler::instructions::{CompileData, CompileError, CompileErrorType, Placeholder, PlaceholderType};
+use crate::compiler::instructions::{
+    CompileData, CompileError, CompileErrorType, Placeholder, PlaceholderType,
+};
 use crate::domain::enums::{Condition, ShortReg, WideReg};
 use crate::domain::Argument;
 
