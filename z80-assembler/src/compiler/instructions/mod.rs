@@ -1,5 +1,5 @@
 use crate::compiler::instructions::common::{
-    compile_data_1, compile_data_2, compile_data_3, compile_data_4, high_byte, low_byte,
+    compile_data_1, compile_data_2, compile_data_3, high_byte, low_byte,
 };
 pub use crate::compiler::instructions::errors::{label_not_found, CompileError, CompileErrorType};
 use crate::compiler::instructions::errors::{unexpected_arguments, unimplemented_instr};
@@ -17,7 +17,6 @@ mod inst_ld;
 pub struct CompileData {
     pub len: u8,
     pub data: [u8; 4],
-    pub placeholder: Option<Placeholder>,
 }
 
 pub struct Placeholder {
@@ -43,31 +42,31 @@ pub fn compile_instruction(
         "ld" => compile_ld(inst, p0, p1, phs),
         // Exchange, Block Transfer, and Search Group
         "ex" => compile_ex(inst),
-        "exx" => inst_no_args(compile_data_1(0b11011001, None), inst),
-        "ldi" => inst_no_args(compile_data_2(0b11101101, 0b10100000, None), inst),
-        "ldir" => inst_no_args(compile_data_2(0b11101101, 0b10110000, None), inst),
-        "ldd" => inst_no_args(compile_data_2(0b11101101, 0b10101000, None), inst),
-        "lddr" => inst_no_args(compile_data_2(0b11101101, 0b10111000, None), inst),
-        "cpd" => inst_no_args(compile_data_2(0b11101101, 0b10101001, None), inst),
-        "cpdr" => inst_no_args(compile_data_2(0b11101101, 0b10111001, None), inst),
-        "cpi" => inst_no_args(compile_data_2(0b11101101, 0b10100001, None), inst),
-        "cpir" => inst_no_args(compile_data_2(0b11101101, 0b10110001, None), inst),
+        "exx" => inst_no_args(compile_data_1(0b11011001), inst),
+        "ldi" => inst_no_args(compile_data_2(0b11101101, 0b10100000), inst),
+        "ldir" => inst_no_args(compile_data_2(0b11101101, 0b10110000), inst),
+        "ldd" => inst_no_args(compile_data_2(0b11101101, 0b10101000), inst),
+        "lddr" => inst_no_args(compile_data_2(0b11101101, 0b10111000), inst),
+        "cpd" => inst_no_args(compile_data_2(0b11101101, 0b10101001), inst),
+        "cpdr" => inst_no_args(compile_data_2(0b11101101, 0b10111001), inst),
+        "cpi" => inst_no_args(compile_data_2(0b11101101, 0b10100001), inst),
+        "cpir" => inst_no_args(compile_data_2(0b11101101, 0b10110001), inst),
         // General-Purpose Arithmetic and CPU Control Groups
-        "daa" => inst_no_args(compile_data_1(0b00100111, None), inst),
-        "cpl" => inst_no_args(compile_data_1(0b00101111, None), inst),
-        "neg" => inst_no_args(compile_data_2(0b11101101, 0b01000100, None), inst),
-        "ccf" => inst_no_args(compile_data_1(0b00111111, None), inst),
-        "scf" => inst_no_args(compile_data_1(0b00110111, None), inst),
-        "nop" => inst_no_args(compile_data_1(0b00000000, None), inst),
-        "halt" => inst_no_args(compile_data_1(0b01110110, None), inst),
-        "di" => inst_no_args(compile_data_1(0b11110011, None), inst),
-        "ei" => inst_no_args(compile_data_1(0b11111011, None), inst),
+        "daa" => inst_no_args(compile_data_1(0b00100111), inst),
+        "cpl" => inst_no_args(compile_data_1(0b00101111), inst),
+        "neg" => inst_no_args(compile_data_2(0b11101101, 0b01000100), inst),
+        "ccf" => inst_no_args(compile_data_1(0b00111111), inst),
+        "scf" => inst_no_args(compile_data_1(0b00110111), inst),
+        "nop" => inst_no_args(compile_data_1(0b00000000), inst),
+        "halt" => inst_no_args(compile_data_1(0b01110110), inst),
+        "di" => inst_no_args(compile_data_1(0b11110011), inst),
+        "ei" => inst_no_args(compile_data_1(0b11111011), inst),
         "im" => compile_im(inst),
         // Call and Return Group
         "call" => todo!(),
         "ret" => todo!(),
-        "reti" => inst_no_args(compile_data_2(0xED, 0x4D, None), inst),
-        "retn" => inst_no_args(compile_data_2(0xED, 0x45, None), inst),
+        "reti" => inst_no_args(compile_data_2(0xED, 0x4D), inst),
+        "retn" => inst_no_args(compile_data_2(0xED, 0x45), inst),
         _ => unimplemented_instr(&inst),
     }
 }
@@ -90,7 +89,7 @@ fn inst_no_args(
 fn compile_call(inst: &Instruction, _: usize) -> Result<CompileData, CompileError> {
     match (&inst.arg0, &inst.arg1) {
         (Argument::Value(val), Argument::None) => {
-            compile_data_3(0xCD, low_byte(*val), high_byte(*val), None)
+            compile_data_3(0xCD, low_byte(*val), high_byte(*val))
         }
         (_, _) => unimplemented_instr(&inst),
     }

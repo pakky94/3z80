@@ -41,53 +41,31 @@ pub fn high_byte(val: u16) -> u8 {
     (val / 256) as u8
 }
 
-pub fn compile_data_1(
-    b0: u8,
-    placeholder: Option<Placeholder>,
-) -> Result<CompileData, CompileError> {
+pub fn compile_data_1(b0: u8) -> Result<CompileData, CompileError> {
     Ok(CompileData {
         len: 1,
         data: [b0, 0, 0, 0],
-        placeholder,
     })
 }
 
-pub fn compile_data_2(
-    b0: u8,
-    b1: u8,
-    placeholder: Option<Placeholder>,
-) -> Result<CompileData, CompileError> {
+pub fn compile_data_2(b0: u8, b1: u8) -> Result<CompileData, CompileError> {
     Ok(CompileData {
         len: 2,
         data: [b0, b1, 0, 0],
-        placeholder,
     })
 }
 
-pub fn compile_data_3(
-    b0: u8,
-    b1: u8,
-    b2: u8,
-    placeholder: Option<Placeholder>,
-) -> Result<CompileData, CompileError> {
+pub fn compile_data_3(b0: u8, b1: u8, b2: u8) -> Result<CompileData, CompileError> {
     Ok(CompileData {
         len: 3,
         data: [b0, b1, b2, 0],
-        placeholder,
     })
 }
 
-pub fn compile_data_4(
-    b0: u8,
-    b1: u8,
-    b2: u8,
-    b4: u8,
-    placeholder: Option<Placeholder>,
-) -> Result<CompileData, CompileError> {
+pub fn compile_data_4(b0: u8, b1: u8, b2: u8, b4: u8) -> Result<CompileData, CompileError> {
     Ok(CompileData {
         len: 4,
         data: [b0, b1, b2, b4],
-        placeholder,
     })
 }
 

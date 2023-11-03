@@ -88,9 +88,6 @@ where
                     self.out[self.idx] = data.data[i as usize];
                     self.idx += 1;
                 }
-                if let Some(p) = data.placeholder {
-                    self.placeholders.push(p);
-                }
             }
             ParseItem::Data(data) => {
                 for b in data.iter() {
