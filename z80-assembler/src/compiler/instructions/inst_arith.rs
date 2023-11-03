@@ -30,6 +30,30 @@ pub fn inst_adc(
     }
 }
 
+pub fn inst_sub(
+    inst: &Instruction,
+    p0: isize,
+    _p1: isize,
+    phs: &mut Vec<Placeholder>,
+) -> Result<CompileData, CompileError> {
+    match (&inst.arg0, &inst.arg1) {
+        (arg, Argument::None) => arith8(arg, p0, phs, SUB_CODES, inst),
+        _ => unimplemented_instr(&inst),
+    }
+}
+
+pub fn inst_sbc(
+    inst: &Instruction,
+    _p0: isize,
+    p1: isize,
+    phs: &mut Vec<Placeholder>,
+) -> Result<CompileData, CompileError> {
+    match (&inst.arg0, &inst.arg1) {
+        (Argument::ShortReg(ShortReg::A), arg) => arith8(arg, p1, phs, SBC_CODES, inst),
+        _ => unimplemented_instr(&inst),
+    }
+}
+
 fn arith8(
     arg: &Argument,
     p: isize,
@@ -85,4 +109,24 @@ const ADC_CODES: ArithGrCodes = ArithGrCodes {
     ix_d_1: 0x8E,
     iy_d_0: 0xFD,
     iy_d_1: 0x8E,
+};
+
+const SUB_CODES: ArithGrCodes = ArithGrCodes {
+    r: 0b10010000,
+    n: 0xD6,
+    hl: 0x96,
+    ix_d_0: 0xDD,
+    ix_d_1: 0x96,
+    iy_d_0: 0xFD,
+    iy_d_1: 0x96,
+};
+
+const SBC_CODES: ArithGrCodes = ArithGrCodes {
+    r: 0b10011000,
+    n: 0xDE,
+    hl: 0x9E,
+    ix_d_0: 0xDD,
+    ix_d_1: 0x9E,
+    iy_d_0: 0xFD,
+    iy_d_1: 0x9E,
 };

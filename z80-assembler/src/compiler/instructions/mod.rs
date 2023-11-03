@@ -5,7 +5,7 @@ use crate::compiler::instructions::errors::{
     guard_values_short, unexpected_arguments, unimplemented_instr,
 };
 pub use crate::compiler::instructions::errors::{label_not_found, CompileError, CompileErrorType};
-use crate::compiler::instructions::inst_arith::{inst_adc, inst_add};
+use crate::compiler::instructions::inst_arith::{inst_adc, inst_add, inst_sbc, inst_sub};
 use crate::compiler::instructions::inst_ex::compile_ex;
 use crate::compiler::instructions::inst_im::compile_im;
 use crate::compiler::instructions::inst_ld::compile_ld;
@@ -58,6 +58,8 @@ pub fn compile_instruction(
         // 8-Bit Arithmetic Group
         "add" => inst_add(inst, p0, p1, phs),
         "adc" => inst_adc(inst, p0, p1, phs),
+        "sub" => inst_sub(inst, p0, p1, phs),
+        "sbc" => inst_sbc(inst, p0, p1, phs),
 
         // General-Purpose Arithmetic and CPU Control Groups
         "daa" => inst_no_args(compile_data_1(0b00100111), inst),
