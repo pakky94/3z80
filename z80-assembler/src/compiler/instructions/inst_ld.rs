@@ -13,11 +13,6 @@ const LD_R_IX_1: u8 = 0b01000110;
 const LD_R_IY_0: u8 = 0b11111101;
 const LD_R_IY_1: u8 = 0b01000110;
 const LD_IX_N_0: u8 = 0b11011101;
-const LD_IX_N_1: u8 = 0b00110110;
-
-const LD_DD_NN: u8 = 0b00000001;
-const LD_IX_NN_0: u8 = 0b11011101;
-const LD_IX_NN_1: u8 = 0b00100001;
 
 pub fn compile_ld(
     inst: &Instruction,
