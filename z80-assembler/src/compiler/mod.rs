@@ -380,17 +380,19 @@ RST 0h
         let compiler = Compiler::new(InMemorySourceProvider {
             files: vec![(
                 SourceHeader { filename: "main.z80".to_string(), }, r#"
+@Inbuf:  A000h
+@Outbuf: A100h
         LD   C,    80h        ;Set up counter
-        LD   HL,   Inbuf      ;Set up pointers
-        LD   DE,   Outbuf
+        LD   HL,   @Inbuf     ;Set up pointers
+        LD   DE,   @Outbuf
 .LOOP:  LID  A,    (HL)       ;Get next byte from
                               ;input buffer
         LD   (DE), A          ;Store in output buffer
-        CP   ODH              ;Is it a CR?
-        JR   Z,    .DONE      ;Yes finished
+        CP   0Dh              ;Is it a CR?
+        JR   Z,    &DONE      ;Yes finished
         INC  HL               ;Increment pointers
         INC  DE
-        DJNZ .LOOP             ;Loop back if 80
+        DJNZ &LOOP             ;Loop back if 80
                               ;bytes have not
                               ;been moved
 .DONE:

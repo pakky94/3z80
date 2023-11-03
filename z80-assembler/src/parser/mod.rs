@@ -145,7 +145,7 @@ impl<'a> Parser<'a> {
                     unimplemented!("expected identifier")
                 }
             }
-            _ => unimplemented!(),
+            t => unimplemented!("unhandled token {:?}", t),
         }
     }
 
@@ -178,7 +178,7 @@ impl<'a> Parser<'a> {
                 self.tokenizer.expect(Token::CloseParen)?;
                 Ok(Argument::DirectAddress(val))
             }
-            _ => unimplemented!(),
+            t => unimplemented!("unhandled token {:?}", t),
         }
     }
 

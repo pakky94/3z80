@@ -1,8 +1,10 @@
 use crate::compiler::instructions::common::{
     compile_data_1, compile_data_2, compile_data_3, high_byte, low_byte, to_cond_code, update_ph,
 };
+use crate::compiler::instructions::errors::{
+    guard_values_short, unexpected_arguments, unimplemented_instr,
+};
 pub use crate::compiler::instructions::errors::{label_not_found, CompileError, CompileErrorType};
-use crate::compiler::instructions::errors::{guard_values_short, unexpected_arguments, unimplemented_instr};
 use crate::compiler::instructions::inst_ex::compile_ex;
 use crate::compiler::instructions::inst_im::compile_im;
 use crate::compiler::instructions::inst_ld::compile_ld;
