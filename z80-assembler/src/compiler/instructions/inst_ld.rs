@@ -31,7 +31,7 @@ pub fn compile_ld(inst: &Instruction, idx: usize) -> Result<CompileData, Compile
         }),
         (Argument::ShortReg(sr0), Argument::LabelValue(label)) => {
             let opcode = LD_R_N | (to_3bit_code(*sr0)? << 3);
-            compile_data_2(opcode, 0, ph_value(idx + 1, label.clone(), inst.line))
+            compile_data_2(opcode, 0, ph_s_val(idx + 1, label.clone(), inst.line))
         }
         (Argument::ShortReg(ShortReg::A), Argument::RegAddress(WideReg::BC)) => {
             compile_data_1(0b00001010, None)

@@ -54,14 +54,15 @@ where
                 .get(ph.label.as_str())
                 .ok_or(label_not_found(&ph))?;
 
-            match ph.ph_type {
-                PlaceholderType::Value => {
+            match (ph.ph_type, ph.size) {
+                (PlaceholderType::Value, 1) => {
                     self.out[ph.idx] = self.out[*addr];
                 }
-                PlaceholderType::Address => {
+                (PlaceholderType::Address, 2) => {
                     self.out[ph.idx] = (*addr % 256) as u8;
                     self.out[ph.idx + 1] = (*addr / 256) as u8
                 }
+                (_, _) => panic!("Invalid placeholder type")
             }
         }
 

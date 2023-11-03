@@ -36,6 +36,13 @@ pub fn unimplemented_instr(instr: &Instruction) -> ! {
     )
 }
 
+pub fn unexpected_arguments(inst: &Instruction, arg: &Argument) -> Result<CompileData, CompileError> {
+    Err(CompileError {
+        error: CompileErrorType::UnexpectedArgument(arg.clone()),
+        instr: Some(inst.clone()),
+    })
+}
+
 pub fn label_not_found(ph: &Placeholder) -> CompileError {
     CompileError {
         error: CompileErrorType::LabelNotFound(ph.label.clone(), ph.line),
