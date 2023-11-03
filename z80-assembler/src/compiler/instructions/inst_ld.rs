@@ -62,14 +62,17 @@ pub fn compile_ld(
             })
         }
         (Argument::WideReg(WideReg::IX), Argument::Value(val)) => {
+            update_ph(p1, 2, 2, phs);
             compile_data_4(LD_IX_NN_0, LD_IX_NN_1, low_byte(*val), high_byte(*val))
         }
         (Argument::WideReg(wr), Argument::Value(val)) => {
+            update_ph(p1, 2, 2, phs);
             let opcode = LD_DD_NN | (to_2bit_code(*wr)? << 4);
             compile_data_3(opcode, low_byte(*val), high_byte(*val))
         }
         (Argument::RegOffsetAddress(WideReg::IX, offset), Argument::Value(val)) => {
             guard_values_short(*offset, *val, || {
+                update_ph(p1, 3, 1, phs);
                 compile_data_4(LD_IX_N_0, LD_IX_N_1, *offset as u8, *val as u8)
             })
         }
