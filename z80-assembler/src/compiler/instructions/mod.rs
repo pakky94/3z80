@@ -113,7 +113,6 @@ pub fn compile_instruction(
         "otir" => inst_no_args(compile_data_2(0xED, 0xB3), inst),
         "outd" => inst_no_args(compile_data_2(0xED, 0xAB), inst),
         "otdr" => inst_no_args(compile_data_2(0xED, 0xBB), inst),
-
         _ => unimplemented_instr(&inst),
     }
 }
