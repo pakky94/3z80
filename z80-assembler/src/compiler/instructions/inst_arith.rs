@@ -2,7 +2,7 @@ use crate::compiler::instructions::common::{
     compile_data_1, compile_data_2, compile_data_3, to_3bit_code, update_ph,
 };
 use crate::compiler::instructions::errors::{guard_values_short, unimplemented_instr};
-use crate::compiler::instructions::{CompileData, CompileError, Placeholder};
+use crate::compiler::instructions::{CompileData, CompileError, Placeholder, PlaceholderType};
 use crate::domain::enums::{ShortReg, WideReg};
 use crate::domain::{Argument, Instruction};
 
@@ -133,7 +133,7 @@ fn arith8(
             compile_data_1(opcode)
         }
         Argument::Value(val) => guard_values_short(0, *val, || {
-            update_ph(p, 1, 1, phs);
+            update_ph(p, 1, PlaceholderType::ShortValue, phs);
             compile_data_2(codes.n, *val as u8)
         }),
         Argument::RegAddress(WideReg::HL) => compile_data_1(codes.hl),

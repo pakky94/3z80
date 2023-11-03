@@ -26,14 +26,17 @@ pub struct CompileData {
 pub struct Placeholder {
     pub idx: usize,
     pub label: String,
-    pub size: u8,
     pub ph_type: PlaceholderType,
     pub line: usize,
 }
 
+#[derive(Debug)]
 pub enum PlaceholderType {
-    Value,
-    Address,
+    ShortValue,
+    WideValue,
+    AbsAddress,
+    RelAddress,
+    Undefined,
 }
 
 pub fn compile_instruction(
@@ -115,11 +118,11 @@ fn compile_call(
 ) -> Result<CompileData, CompileError> {
     match (&inst.arg0, &inst.arg1) {
         (Argument::Value(val), Argument::None) => {
-            update_ph(p0, 1, 2, phs);
+            update_ph(p0, 1, PlaceholderType::AbsAddress, phs);
             compile_data_3(0xCD, low_byte(*val), high_byte(*val))
         }
         (Argument::Condition(c), Argument::Value(val)) => {
-            update_ph(p1, 1, 2, phs);
+            update_ph(p1, 1, PlaceholderType::AbsAddress, phs);
             compile_data_3(
                 0b11000100 | (to_cond_code(*c)? << 3),
                 low_byte(*val),

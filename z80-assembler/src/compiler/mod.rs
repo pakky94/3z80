@@ -54,19 +54,19 @@ where
                 .get(ph.label.as_str())
                 .ok_or(label_not_found(&ph))?;
 
-            match (ph.ph_type, ph.size) {
-                (PlaceholderType::Value, 1) => {
+            match ph.ph_type {
+                PlaceholderType::ShortValue => {
                     self.out[ph.idx] = self.out[*addr];
                 }
-                (PlaceholderType::Value, 2) => {
+                PlaceholderType::WideValue => {
                     self.out[ph.idx] = self.out[*addr];
                     self.out[ph.idx + 1] = self.out[*addr + 1];
                 }
-                (PlaceholderType::Address, 2) => {
+                PlaceholderType::AbsAddress => {
                     self.out[ph.idx] = (*addr % 256) as u8;
                     self.out[ph.idx + 1] = (*addr / 256) as u8
                 }
-                (_, _) => panic!("Invalid placeholder type"),
+                t => panic!("Invalid placeholder type: {:?}", t),
             }
         }
 
@@ -132,6 +132,7 @@ where
             Ok(None)
         }
     }
+
     fn extract_placeholders(&mut self, inst: Instruction) -> (Instruction, isize, isize) {
         let (arg0, p0) = self.try_extract_placeholder(&inst.arg0, inst.line);
         let (arg1, p1) = self.try_extract_placeholder(&inst.arg1, inst.line);
@@ -157,8 +158,7 @@ where
                 self.placeholders.push(Placeholder {
                     idx: self.idx,
                     label: s.clone(),
-                    size: 0,
-                    ph_type: PlaceholderType::Address,
+                    ph_type: PlaceholderType::Undefined,
                     line,
                 });
                 (
@@ -170,8 +170,7 @@ where
                 self.placeholders.push(Placeholder {
                     idx: self.idx,
                     label: s.clone(),
-                    size: 0,
-                    ph_type: PlaceholderType::Value,
+                    ph_type: PlaceholderType::Undefined,
                     line,
                 });
                 (
@@ -179,9 +178,6 @@ where
                     isize::try_from(self.placeholders.len()).unwrap() - 1,
                 )
             }
-            // Argument::LabelValue(s) => {
-            //     Some(Argument::Value(0))
-            // }
             _ => (None, -1),
         }
     }

@@ -1,6 +1,6 @@
 use crate::compiler::instructions::common::*;
 use crate::compiler::instructions::errors::{guard_values_short, unimplemented_instr};
-use crate::compiler::instructions::{CompileData, CompileError, Placeholder};
+use crate::compiler::instructions::{CompileData, CompileError, Placeholder, PlaceholderType};
 use crate::domain::enums::{ShortReg, WideReg};
 use crate::domain::{Argument, Instruction};
 
@@ -31,7 +31,7 @@ pub fn compile_ld(
             compile_data_1(opcode)
         }
         (Argument::ShortReg(sr0), Argument::Value(val)) => guard_values_short(0, *val, || {
-            update_ph(p1, 1, 1, phs);
+            update_ph(p1, 1, PlaceholderType::ShortValue, phs);
             let opcode = LD_R_N | (to_3bit_code(*sr0)? << 3);
             compile_data_2(opcode, *val as u8)
         }),
@@ -42,7 +42,7 @@ pub fn compile_ld(
             compile_data_1(0b00011010)
         }
         (Argument::ShortReg(ShortReg::A), Argument::DirectAddress(addr)) => {
-            update_ph(p1, 1, 2, phs);
+            update_ph(p1, 1, PlaceholderType::AbsAddress, phs);
             compile_data_3(LD_A_NN, low_byte(*addr), high_byte(*addr))
         }
         (Argument::ShortReg(sr0), Argument::RegAddress(WideReg::HL)) => {
@@ -62,17 +62,17 @@ pub fn compile_ld(
             })
         }
         (Argument::WideReg(WideReg::IX), Argument::Value(val)) => {
-            update_ph(p1, 2, 2, phs);
+            update_ph(p1, 2, PlaceholderType::WideValue, phs);
             compile_data_4(LD_IX_NN_0, LD_IX_NN_1, low_byte(*val), high_byte(*val))
         }
         (Argument::WideReg(wr), Argument::Value(val)) => {
-            update_ph(p1, 2, 2, phs);
+            update_ph(p1, 1, PlaceholderType::WideValue, phs);
             let opcode = LD_DD_NN | (to_2bit_code(*wr)? << 4);
             compile_data_3(opcode, low_byte(*val), high_byte(*val))
         }
         (Argument::RegOffsetAddress(WideReg::IX, offset), Argument::Value(val)) => {
             guard_values_short(*offset, *val, || {
-                update_ph(p1, 3, 1, phs);
+                update_ph(p1, 3, PlaceholderType::ShortValue, phs);
                 compile_data_4(LD_IX_N_0, LD_IX_N_1, *offset as u8, *val as u8)
             })
         }

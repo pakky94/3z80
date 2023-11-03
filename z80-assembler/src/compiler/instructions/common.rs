@@ -1,4 +1,4 @@
-use crate::compiler::instructions::{CompileData, CompileError, CompileErrorType, Placeholder};
+use crate::compiler::instructions::{CompileData, CompileError, CompileErrorType, Placeholder, PlaceholderType};
 use crate::domain::enums::{Condition, ShortReg, WideReg};
 use crate::domain::Argument;
 
@@ -80,12 +80,12 @@ pub fn compile_data_4(b0: u8, b1: u8, b2: u8, b4: u8) -> Result<CompileData, Com
     })
 }
 
-pub fn update_ph(p_idx: isize, delta_idx: usize, ph_size: u8, phs: &mut Vec<Placeholder>) {
+pub fn update_ph(p_idx: isize, delta_idx: usize, t: PlaceholderType, phs: &mut Vec<Placeholder>) {
     if p_idx < 0 {
         return;
     }
 
     let p_idx = usize::try_from(p_idx).unwrap();
     phs[p_idx].idx += delta_idx;
-    phs[p_idx].size = ph_size;
+    phs[p_idx].ph_type = t;
 }
