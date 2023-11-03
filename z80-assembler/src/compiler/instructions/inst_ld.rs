@@ -35,17 +35,17 @@ pub fn compile_ld(
             let opcode = LD_R_N | (to_3bit_code(*sr0)? << 3);
             compile_data_2(opcode, *val as u8)
         }),
-        (Argument::ShortReg(ShortReg::A), Argument::RegAddress(WideReg::BC)) => {
+        (Argument::ShortReg(ShortReg::A), Argument::WideRegAddress(WideReg::BC)) => {
             compile_data_1(0b00001010)
         }
-        (Argument::ShortReg(ShortReg::A), Argument::RegAddress(WideReg::DE)) => {
+        (Argument::ShortReg(ShortReg::A), Argument::WideRegAddress(WideReg::DE)) => {
             compile_data_1(0b00011010)
         }
         (Argument::ShortReg(ShortReg::A), Argument::DirectAddress(addr)) => {
             update_ph(p1, 1, PlaceholderType::AbsAddress, phs);
             compile_data_3(LD_A_NN, low_byte(*addr), high_byte(*addr))
         }
-        (Argument::ShortReg(sr0), Argument::RegAddress(WideReg::HL)) => {
+        (Argument::ShortReg(sr0), Argument::WideRegAddress(WideReg::HL)) => {
             let opcode = LD_R_HL | (to_3bit_code(*sr0)? << 3);
             compile_data_1(opcode)
         }
@@ -76,7 +76,7 @@ pub fn compile_ld(
                 compile_data_4(LD_IX_N_0, LD_IX_N_1, *offset as u8, *val as u8)
             })
         }
-        (Argument::RegAddress(WideReg::DE), Argument::ShortReg(ShortReg::A)) => {
+        (Argument::WideRegAddress(WideReg::DE), Argument::ShortReg(ShortReg::A)) => {
             compile_data_1(0x12)
         }
         (_, _) => unimplemented_instr(&inst),

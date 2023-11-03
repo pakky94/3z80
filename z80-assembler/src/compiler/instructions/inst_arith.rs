@@ -147,7 +147,7 @@ fn arith8(
             update_ph(p, 1, PlaceholderType::ShortValue, phs);
             compile_data_2(codes.n, *val as u8)
         }),
-        Argument::RegAddress(WideReg::HL) => compile_data_1(codes.hl),
+        Argument::WideRegAddress(WideReg::HL) => compile_data_1(codes.hl),
         Argument::RegOffsetAddress(WideReg::IX, offset) => guard_values_short(0, *offset, || {
             compile_data_3(codes.ix_d_0, codes.ix_d_1, *offset as u8)
         }),
@@ -168,7 +168,7 @@ fn offset(
             let opcode = codes.r | to_3bit_code(*sr)?;
             compile_data_1(opcode)
         }
-        Argument::RegAddress(WideReg::HL) => compile_data_1(codes.hl),
+        Argument::WideRegAddress(WideReg::HL) => compile_data_1(codes.hl),
         Argument::RegOffsetAddress(WideReg::IX, offset) => guard_values_short(0, *offset, || {
             compile_data_3(codes.ix_d_0, codes.ix_d_1, *offset as u8)
         }),

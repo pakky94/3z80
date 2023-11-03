@@ -11,6 +11,7 @@ use crate::compiler::instructions::inst_arith::{
 };
 use crate::compiler::instructions::inst_ex::compile_ex;
 use crate::compiler::instructions::inst_im::compile_im;
+use crate::compiler::instructions::inst_inout::{compile_in, compile_out};
 use crate::compiler::instructions::inst_jump::{inst_djnz, inst_jp, inst_jr};
 use crate::compiler::instructions::inst_ld::compile_ld;
 use crate::compiler::instructions::instr_stack::{compile_pop, compile_push};
@@ -21,6 +22,7 @@ mod errors;
 mod inst_arith;
 mod inst_ex;
 mod inst_im;
+mod inst_inout;
 mod inst_jump;
 mod inst_ld;
 mod instr_stack;
@@ -79,7 +81,6 @@ pub fn compile_instruction(
         "cp" => inst_cp(inst, p0, p1, phs),
         "inc" => inst_inc(inst),
         "dec" => inst_dec(inst),
-
         // General-Purpose Arithmetic and CPU Control Groups
         "daa" => inst_no_args(compile_data_1(0b00100111), inst),
         "cpl" => inst_no_args(compile_data_1(0b00101111), inst),
@@ -101,6 +102,18 @@ pub fn compile_instruction(
         "reti" => inst_no_args(compile_data_2(0xED, 0x4D), inst),
         "retn" => inst_no_args(compile_data_2(0xED, 0x45), inst),
         "rst" => compile_rst(&inst),
+        // Input and Output Group
+        "in" => compile_in(inst, p0, p1, phs),
+        "ini" => inst_no_args(compile_data_2(0xED, 0xA2), inst),
+        "inir" => inst_no_args(compile_data_2(0xED, 0xB2), inst),
+        "ind" => inst_no_args(compile_data_2(0xED, 0xAA), inst),
+        "indr" => inst_no_args(compile_data_2(0xED, 0xBA), inst),
+        "out" => compile_out(inst, p0, p1, phs),
+        "outi" => inst_no_args(compile_data_2(0xED, 0xA3), inst),
+        "otir" => inst_no_args(compile_data_2(0xED, 0xB3), inst),
+        "outd" => inst_no_args(compile_data_2(0xED, 0xAB), inst),
+        "otdr" => inst_no_args(compile_data_2(0xED, 0xBB), inst),
+
         _ => unimplemented_instr(&inst),
     }
 }

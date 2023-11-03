@@ -168,7 +168,7 @@ impl<'a> Parser<'a> {
                 } else {
                     if let ParsedRegister::WideReg(wr) = parse_register(&i) {
                         self.tokenizer.expect(Token::CloseParen)?;
-                        Ok(Argument::RegAddress(wr))
+                        Ok(Argument::WideRegAddress(wr))
                     } else {
                         unimplemented!()
                     }
@@ -257,7 +257,7 @@ add b, 8h"#,
             ParseItem::Instruction(Instruction {
                 opcode: "ld".to_string(),
                 arg0: Argument::ShortReg(ShortReg::A),
-                arg1: Argument::RegAddress(WideReg::IX),
+                arg1: Argument::WideRegAddress(WideReg::IX),
                 line: 1,
             }),
             *parser.parse().unwrap().items.get(0).unwrap()

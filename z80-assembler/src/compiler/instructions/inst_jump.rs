@@ -36,9 +36,9 @@ pub fn inst_jp(
             update_ph(p1, 1, PlaceholderType::AbsAddress, phs);
             compile_data_3(opcode, low_byte(*addr), high_byte(*addr))
         }
-        (Argument::RegAddress(WideReg::HL), Argument::None) => compile_data_1(0xE9),
-        (Argument::RegAddress(WideReg::IX), Argument::None) => compile_data_2(0xDD, 0xE9),
-        (Argument::RegAddress(WideReg::IY), Argument::None) => compile_data_2(0xFD, 0xE9),
+        (Argument::WideRegAddress(WideReg::HL), Argument::None) => compile_data_1(0xE9),
+        (Argument::WideRegAddress(WideReg::IX), Argument::None) => compile_data_2(0xDD, 0xE9),
+        (Argument::WideRegAddress(WideReg::IY), Argument::None) => compile_data_2(0xFD, 0xE9),
         (_, _) => unimplemented_instr(&inst),
     }
 }
