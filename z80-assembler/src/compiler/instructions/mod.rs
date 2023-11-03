@@ -2,7 +2,7 @@ use crate::compiler::instructions::common::{
     compile_data_1, compile_data_2, compile_data_3, high_byte, low_byte, to_cond_code, update_ph,
 };
 pub use crate::compiler::instructions::errors::{label_not_found, CompileError, CompileErrorType};
-use crate::compiler::instructions::errors::{unexpected_arguments, unimplemented_instr};
+use crate::compiler::instructions::errors::{guard_values_short, unexpected_arguments, unimplemented_instr};
 use crate::compiler::instructions::inst_ex::compile_ex;
 use crate::compiler::instructions::inst_im::compile_im;
 use crate::compiler::instructions::inst_ld::compile_ld;
@@ -64,9 +64,10 @@ pub fn compile_instruction(
         "im" => compile_im(inst, p0, phs),
         // Call and Return Group
         "call" => compile_call(&inst, p0, p1, phs),
-        "ret" => todo!(),
+        "ret" => compile_ret(&inst),
         "reti" => inst_no_args(compile_data_2(0xED, 0x4D), inst),
         "retn" => inst_no_args(compile_data_2(0xED, 0x45), inst),
+        "rst" => compile_rst(&inst),
         _ => unimplemented_instr(&inst),
     }
 }
@@ -104,6 +105,29 @@ fn compile_call(
                 low_byte(*val),
                 high_byte(*val),
             )
+        }
+        (_, _) => unimplemented_instr(&inst),
+    }
+}
+
+fn compile_ret(inst: &Instruction) -> Result<CompileData, CompileError> {
+    match (&inst.arg0, &inst.arg1) {
+        (Argument::None, Argument::None) => compile_data_1(0xC9),
+        (Argument::Condition(c), Argument::None) => {
+            compile_data_1(0b11000000 | (to_cond_code(*c)? << 3))
+        }
+        (_, _) => unimplemented_instr(&inst),
+    }
+}
+
+fn compile_rst(inst: &&Instruction) -> Result<CompileData, CompileError> {
+    match (&inst.arg0, &inst.arg1) {
+        (Argument::Value(val), Argument::None) => {
+            // TODO: better error message?? also placeholder should not be allowed here
+            guard_values_short(*val, 0, || {
+                let val = *val as u8 & 0b00111000;
+                compile_data_1(0b11000111 | val)
+            })
         }
         (_, _) => unimplemented_instr(&inst),
     }

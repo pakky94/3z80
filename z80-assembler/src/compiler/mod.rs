@@ -349,6 +349,31 @@ LD A, @const2
         );
     }
 
+    #[test]
+    #[rustfmt::skip]
+    fn test_compile_rst() {
+        let compiler = Compiler::new(InMemorySourceProvider {
+            files: vec![(
+                SourceHeader { filename: "main.z80".to_string(), },
+                r#"
+@const1: 18h
+RST @const1
+RST 30h
+RST 0h
+"#.to_string(),
+            )],
+        }, 1024);
+
+        compare_memory(
+            vec![
+                0b11011111,
+                0b11110111,
+                0b11000111,
+            ],
+            compiler.compile().unwrap(),
+        );
+    }
+
     fn compare_memory(expected: Vec<u8>, actual: Vec<u8>) {
         if actual.len() < expected.len() {
             eprintln!("expected: {:?}, actual {:?}", expected.len(), actual.len());
