@@ -23,7 +23,7 @@ pub fn inst_djnz(
 pub fn inst_jp(
     inst: &Instruction,
     p0: isize,
-    _p1: isize,
+    p1: isize,
     phs: &mut Vec<Placeholder>,
 ) -> Result<CompileData, CompileError> {
     match (&inst.arg0, &inst.arg1) {
@@ -33,7 +33,7 @@ pub fn inst_jp(
         }
         (Argument::Condition(c), Argument::DirectAddress(addr)) => {
             let opcode = 0b11000010 | (to_cond_code(*c)? << 3);
-            update_ph(p0, 1, PlaceholderType::AbsAddress, phs);
+            update_ph(p1, 1, PlaceholderType::AbsAddress, phs);
             compile_data_3(opcode, low_byte(*addr), high_byte(*addr))
         }
         (Argument::RegAddress(WideReg::HL), Argument::None) => compile_data_1(0xE9),
