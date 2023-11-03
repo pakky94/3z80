@@ -58,6 +58,10 @@ where
                 (PlaceholderType::Value, 1) => {
                     self.out[ph.idx] = self.out[*addr];
                 }
+                (PlaceholderType::Value, 2) => {
+                    self.out[ph.idx] = self.out[*addr];
+                    self.out[ph.idx + 1] = self.out[*addr + 1];
+                }
                 (PlaceholderType::Address, 2) => {
                     self.out[ph.idx] = (*addr % 256) as u8;
                     self.out[ph.idx + 1] = (*addr / 256) as u8
