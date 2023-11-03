@@ -5,7 +5,7 @@ use crate::compiler::instructions::errors::{
     guard_values_short, unexpected_arguments, unimplemented_instr,
 };
 pub use crate::compiler::instructions::errors::{label_not_found, CompileError, CompileErrorType};
-use crate::compiler::instructions::inst_arith::{inst_adc, inst_add, inst_and, inst_cp, inst_or, inst_sbc, inst_sub, inst_xor};
+use crate::compiler::instructions::inst_arith::{inst_adc, inst_add, inst_and, inst_cp, inst_dec, inst_inc, inst_or, inst_sbc, inst_sub, inst_xor};
 use crate::compiler::instructions::inst_ex::compile_ex;
 use crate::compiler::instructions::inst_im::compile_im;
 use crate::compiler::instructions::inst_ld::compile_ld;
@@ -55,7 +55,7 @@ pub fn compile_instruction(
         "cpdr" => inst_no_args(compile_data_2(0b11101101, 0b10111001), inst),
         "cpi" => inst_no_args(compile_data_2(0b11101101, 0b10100001), inst),
         "cpir" => inst_no_args(compile_data_2(0b11101101, 0b10110001), inst),
-        // 8-Bit Arithmetic Group
+        // 8/16-Bit Arithmetic Group
         "add" => inst_add(inst, p0, p1, phs),
         "adc" => inst_adc(inst, p0, p1, phs),
         "sub" => inst_sub(inst, p0, p1, phs),
@@ -64,6 +64,8 @@ pub fn compile_instruction(
         "or" => inst_or(inst, p0, p1, phs),
         "xor" => inst_xor(inst, p0, p1, phs),
         "cp" => inst_cp(inst, p0, p1, phs),
+        "inc" => inst_inc(inst),
+        "dec" => inst_dec(inst),
 
         // General-Purpose Arithmetic and CPU Control Groups
         "daa" => inst_no_args(compile_data_1(0b00100111), inst),

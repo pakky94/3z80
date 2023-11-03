@@ -102,6 +102,24 @@ pub fn inst_cp(
     }
 }
 
+pub fn inst_inc(
+    inst: &Instruction,
+) -> Result<CompileData, CompileError> {
+    match (&inst.arg0, &inst.arg1) {
+        (arg, Argument::None) => offset(arg, INC_CODES, inst),
+        _ => unimplemented_instr(&inst),
+    }
+}
+
+pub fn inst_dec(
+    inst: &Instruction,
+) -> Result<CompileData, CompileError> {
+    match (&inst.arg0, &inst.arg1) {
+        (arg, Argument::None) => offset(arg, DEC_CODES, inst),
+        _ => unimplemented_instr(&inst),
+    }
+}
+
 fn arith8(
     arg: &Argument,
     p: isize,
@@ -118,6 +136,27 @@ fn arith8(
             update_ph(p, 1, 1, phs);
             compile_data_2(codes.n, *val as u8)
         }),
+        Argument::RegAddress(WideReg::HL) => compile_data_1(codes.hl),
+        Argument::RegOffsetAddress(WideReg::IX, offset) => guard_values_short(0, *offset, || {
+            compile_data_3(codes.ix_d_0, codes.ix_d_1, *offset as u8)
+        }),
+        Argument::RegOffsetAddress(WideReg::IY, offset) => guard_values_short(0, *offset, || {
+            compile_data_3(codes.iy_d_0, codes.iy_d_1, *offset as u8)
+        }),
+        _ => unimplemented_instr(inst),
+    }
+}
+
+fn offset(
+    arg: &Argument,
+    codes: ArithGrCodes,
+    inst: &Instruction,
+) -> Result<CompileData, CompileError> {
+    match arg {
+        Argument::ShortReg(sr) => {
+            let opcode = codes.r | to_3bit_code(*sr)?;
+            compile_data_1(opcode)
+        }
         Argument::RegAddress(WideReg::HL) => compile_data_1(codes.hl),
         Argument::RegOffsetAddress(WideReg::IX, offset) => guard_values_short(0, *offset, || {
             compile_data_3(codes.ix_d_0, codes.ix_d_1, *offset as u8)
@@ -217,4 +256,24 @@ const CP_CODES: ArithGrCodes = ArithGrCodes {
     ix_d_1: 0xBE,
     iy_d_0: 0xFD,
     iy_d_1: 0xBE,
+};
+
+const INC_CODES: ArithGrCodes = ArithGrCodes {
+    r: 0b00000100,
+    n: 0,
+    hl: 0x34,
+    ix_d_0: 0xDD,
+    ix_d_1: 0x34,
+    iy_d_0: 0xFD,
+    iy_d_1: 0x34,
+};
+
+const DEC_CODES: ArithGrCodes = ArithGrCodes {
+    r: 0b00000101,
+    n: 0,
+    hl: 0x35,
+    ix_d_0: 0xDD,
+    ix_d_1: 0x35,
+    iy_d_0: 0xFD,
+    iy_d_1: 0x35,
 };
