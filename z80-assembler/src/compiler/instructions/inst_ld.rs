@@ -76,6 +76,9 @@ pub fn compile_ld(
                 compile_data_4(LD_IX_N_0, LD_IX_N_1, *offset as u8, *val as u8)
             })
         }
+        (Argument::RegAddress(WideReg::DE), Argument::ShortReg(ShortReg::A)) => {
+            compile_data_1(0x12)
+        }
         (_, _) => unimplemented_instr(&inst),
     }
 }

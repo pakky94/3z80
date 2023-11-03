@@ -385,7 +385,7 @@ RST 0h
         LD   C,    80h        ;Set up counter
         LD   HL,   @Inbuf     ;Set up pointers
         LD   DE,   @Outbuf
-.LOOP:  LID  A,    (HL)       ;Get next byte from
+.LOOP:  LD   A,    (HL)       ;Get next byte from
                               ;input buffer
         LD   (DE), A          ;Store in output buffer
         CP   0Dh              ;Is it a CR?

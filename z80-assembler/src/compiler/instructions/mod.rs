@@ -5,6 +5,7 @@ use crate::compiler::instructions::errors::{
     guard_values_short, unexpected_arguments, unimplemented_instr,
 };
 pub use crate::compiler::instructions::errors::{label_not_found, CompileError, CompileErrorType};
+use crate::compiler::instructions::inst_arith::{inst_adc, inst_add};
 use crate::compiler::instructions::inst_ex::compile_ex;
 use crate::compiler::instructions::inst_im::compile_im;
 use crate::compiler::instructions::inst_ld::compile_ld;
@@ -12,6 +13,7 @@ use crate::domain::{Argument, Instruction};
 
 pub mod common;
 mod errors;
+mod inst_arith;
 mod inst_ex;
 mod inst_im;
 mod inst_ld;
@@ -53,6 +55,10 @@ pub fn compile_instruction(
         "cpdr" => inst_no_args(compile_data_2(0b11101101, 0b10111001), inst),
         "cpi" => inst_no_args(compile_data_2(0b11101101, 0b10100001), inst),
         "cpir" => inst_no_args(compile_data_2(0b11101101, 0b10110001), inst),
+        // 8-Bit Arithmetic Group
+        "add" => inst_add(inst, p0, p1, phs),
+        "adc" => inst_adc(inst, p0, p1, phs),
+
         // General-Purpose Arithmetic and CPU Control Groups
         "daa" => inst_no_args(compile_data_1(0b00100111), inst),
         "cpl" => inst_no_args(compile_data_1(0b00101111), inst),
