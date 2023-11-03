@@ -45,6 +45,7 @@ impl<'a> Parser<'a> {
                     continue;
                 }
                 Token::At => self.parse_constant()?,
+                Token::Directive(s) => self.parse_directive()?,
                 Token::EOF => break,
                 _ => unimplemented!("unexpected token {:?} - {:?}", t, self.items),
             };
@@ -207,6 +208,13 @@ impl<'a> Parser<'a> {
             }
         } else {
             unimplemented!("expected identifier token")
+        }
+    }
+    fn parse_directive(&mut self) -> Result<ParseItem, ParseError> {
+        if let Token::Directive(s) = self.tokenizer.next()? {
+            Ok(ParseItem::Directive(s))
+        } else {
+            unreachable!()
         }
     }
 }
@@ -429,6 +437,25 @@ add a, @const1"#,
                 arg1: Argument::Constant("const1".to_string()),
                 line: 3,
             }),
+            *res.items.get(1).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_parse_directives() {
+        let parser = Parser::new(
+            r#"
+#include "test.z80"
+#test dir 123
+"#,
+        );
+        let res = parser.parse().unwrap();
+        assert_eq!(
+            ParseItem::Directive(r#"#include "test.z80""#.to_string()),
+            *res.items.get(0).unwrap()
+        );
+        assert_eq!(
+            ParseItem::Directive(r#"#test dir 123"#.to_string()),
             *res.items.get(1).unwrap()
         );
     }

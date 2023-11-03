@@ -103,6 +103,7 @@ impl<'a> Tokenizer<'a> {
 
         if let Some((_, c)) = self.chars.peek() {
             match c {
+                '#' => self.parse_directive(),
                 ',' | '(' | ')' | '+' | '.' | ':' | '&' | '*' | '@' => self.parse_single_char(),
                 'a'..='z' | 'A'..='Z' | '0'..='9' => self.parse_identifier(),
                 _ => Err(ParseError::UnexpectedChar(c.clone(), self.curr_line)),
@@ -146,6 +147,28 @@ impl<'a> Tokenizer<'a> {
             Some((_, '*')) => Ok(Token::Asterisk),
             Some((_, '@')) => Ok(Token::At),
             _ => unreachable!(),
+        }
+    }
+
+    fn parse_directive(&mut self) -> Result<Token, ParseError> {
+        if let Some((start, _)) = self.chars.next() {
+            let mut end = start + 1;
+            loop {
+                if let Some((p, c)) = self.chars.peek() {
+                    match c {
+                        '\n' => return Ok(Token::Directive(self.source[start..*p].to_string())),
+                        _ => {
+                            end = (*p).clone() + 1;
+                            let _ = self.chars.next();
+                            continue;
+                        }
+                    }
+                } else {
+                    return Ok(Token::Directive(self.source[start..end].to_string()));
+                }
+            }
+        } else {
+            Err(ParseError::UnexpectedEOF(self.curr_line))
         }
     }
 }

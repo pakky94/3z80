@@ -13,4 +13,5 @@ pub enum Token {
     At,
     NewLine,
     EOF,
+    Directive(String),
 }

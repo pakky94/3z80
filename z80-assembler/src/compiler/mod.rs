@@ -110,6 +110,7 @@ where
             ParseItem::Constant(cons) => {
                 self.constants.insert(cons.name, cons.value);
             }
+            ParseItem::Directive(_) => unimplemented!(),
         })
     }
 

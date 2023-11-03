@@ -10,6 +10,7 @@ pub enum ParseItem {
     Instruction(Instruction),
     Data(Vec<u8>),
     Constant(Constant),
+    Directive(String),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
