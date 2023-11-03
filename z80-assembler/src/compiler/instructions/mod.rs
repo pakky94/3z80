@@ -13,6 +13,7 @@ use crate::compiler::instructions::inst_ex::compile_ex;
 use crate::compiler::instructions::inst_im::compile_im;
 use crate::compiler::instructions::inst_jump::{inst_djnz, inst_jp, inst_jr};
 use crate::compiler::instructions::inst_ld::compile_ld;
+use crate::compiler::instructions::instr_stack::{compile_pop, compile_push};
 use crate::domain::{Argument, Instruction};
 
 pub mod common;
@@ -22,6 +23,7 @@ mod inst_ex;
 mod inst_im;
 mod inst_jump;
 mod inst_ld;
+mod instr_stack;
 
 pub struct CompileData {
     pub len: u8,
@@ -53,6 +55,8 @@ pub fn compile_instruction(
 ) -> Result<CompileData, CompileError> {
     match inst.opcode.as_str() {
         "ld" => compile_ld(inst, p0, p1, phs),
+        "push" => compile_push(inst),
+        "pop" => compile_pop(inst),
         // Exchange, Block Transfer, and Search Group
         "ex" => compile_ex(inst),
         "exx" => inst_no_args(compile_data_1(0b11011001), inst),
@@ -87,16 +91,16 @@ pub fn compile_instruction(
         "di" => inst_no_args(compile_data_1(0b11110011), inst),
         "ei" => inst_no_args(compile_data_1(0b11111011), inst),
         "im" => compile_im(inst, p0, phs),
+        // Jump Group
+        "jp" => inst_jp(inst, p0, p1, phs),
+        "jr" => inst_jr(inst, p0, p1, phs),
+        "djnz" => inst_djnz(inst, p0, phs),
         // Call and Return Group
         "call" => compile_call(inst, p0, p1, phs),
         "ret" => compile_ret(inst),
         "reti" => inst_no_args(compile_data_2(0xED, 0x4D), inst),
         "retn" => inst_no_args(compile_data_2(0xED, 0x45), inst),
         "rst" => compile_rst(&inst),
-        // Jump Group
-        "jp" => inst_jp(inst, p0, p1, phs),
-        "jr" => inst_jr(inst, p0, p1, phs),
-        "djnz" => inst_djnz(inst, p0, phs),
         _ => unimplemented_instr(&inst),
     }
 }
