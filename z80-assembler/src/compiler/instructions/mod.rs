@@ -68,6 +68,10 @@ pub fn compile_instruction(
         "reti" => inst_no_args(compile_data_2(0xED, 0x4D), inst),
         "retn" => inst_no_args(compile_data_2(0xED, 0x45), inst),
         "rst" => compile_rst(&inst),
+        // Jump Group
+        "jp" => todo!(),
+        "jr" => todo!(),
+        "djnz" => todo!(),
         _ => unimplemented_instr(&inst),
     }
 }
