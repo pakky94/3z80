@@ -1,7 +1,5 @@
-use crate::compiler::instructions::{
-    CompileData, CompileError, CompileErrorType, Placeholder, PlaceholderType,
-};
-use crate::domain::enums::{ShortReg, WideReg};
+use crate::compiler::instructions::{CompileData, CompileError, CompileErrorType, Placeholder};
+use crate::domain::enums::{Condition, ShortReg, WideReg};
 use crate::domain::Argument;
 
 pub fn to_3bit_code(sr: ShortReg) -> Result<u8, CompileError> {
@@ -30,6 +28,19 @@ pub fn to_2bit_code(wr: WideReg) -> Result<u8, CompileError> {
             error: CompileErrorType::UnexpectedArgument(Argument::WideReg(wr)),
             instr: None,
         }),
+    }
+}
+
+pub fn to_cond_code(c: Condition) -> Result<u8, CompileError> {
+    match c {
+        Condition::NZ => Ok(0b000),
+        Condition::Z => Ok(0b001),
+        Condition::NC => Ok(0b010),
+        Condition::C => Ok(0b011),
+        Condition::PO => Ok(0b100),
+        Condition::PE => Ok(0b101),
+        Condition::P => Ok(0b110),
+        Condition::M => Ok(0b111),
     }
 }
 

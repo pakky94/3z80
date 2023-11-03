@@ -1,5 +1,5 @@
 use crate::compiler::instructions::common::{
-    compile_data_1, compile_data_2, compile_data_3, high_byte, low_byte,
+    compile_data_1, compile_data_2, compile_data_3, high_byte, low_byte, to_cond_code, update_ph,
 };
 pub use crate::compiler::instructions::errors::{label_not_found, CompileError, CompileErrorType};
 use crate::compiler::instructions::errors::{unexpected_arguments, unimplemented_instr};
@@ -61,9 +61,9 @@ pub fn compile_instruction(
         "halt" => inst_no_args(compile_data_1(0b01110110), inst),
         "di" => inst_no_args(compile_data_1(0b11110011), inst),
         "ei" => inst_no_args(compile_data_1(0b11111011), inst),
-        "im" => compile_im(inst),
+        "im" => compile_im(inst, p0, phs),
         // Call and Return Group
-        "call" => todo!(),
+        "call" => compile_call(&inst, p0, p1, phs),
         "ret" => todo!(),
         "reti" => inst_no_args(compile_data_2(0xED, 0x4D), inst),
         "retn" => inst_no_args(compile_data_2(0xED, 0x45), inst),
@@ -86,10 +86,24 @@ fn inst_no_args(
     }
 }
 
-fn compile_call(inst: &Instruction, _: usize) -> Result<CompileData, CompileError> {
+fn compile_call(
+    inst: &Instruction,
+    p0: isize,
+    p1: isize,
+    phs: &mut Vec<Placeholder>,
+) -> Result<CompileData, CompileError> {
     match (&inst.arg0, &inst.arg1) {
         (Argument::Value(val), Argument::None) => {
+            update_ph(p0, 1, 2, phs);
             compile_data_3(0xCD, low_byte(*val), high_byte(*val))
+        }
+        (Argument::Condition(c), Argument::Value(val)) => {
+            update_ph(p1, 1, 2, phs);
+            compile_data_3(
+                0b11000100 | (to_cond_code(*c)? << 3),
+                low_byte(*val),
+                high_byte(*val),
+            )
         }
         (_, _) => unimplemented_instr(&inst),
     }
