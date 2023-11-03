@@ -33,11 +33,16 @@ pub enum PlaceholderType {
     Address,
 }
 
-pub fn compile_instruction(inst: &Instruction, idx: usize) -> Result<CompileData, CompileError> {
+pub fn compile_instruction(
+    inst: &Instruction,
+    p0: isize,
+    p1: isize,
+    phs: &mut Vec<Placeholder>,
+) -> Result<CompileData, CompileError> {
     match inst.opcode.as_str() {
-        "ld" => compile_ld(inst, idx),
+        "ld" => compile_ld(inst, p0, p1, phs),
         // Exchange, Block Transfer, and Search Group
-        "ex" => compile_ex(inst, idx),
+        "ex" => compile_ex(inst),
         "exx" => inst_no_args(compile_data_1(0b11011001, None), inst),
         "ldi" => inst_no_args(compile_data_2(0b11101101, 0b10100000, None), inst),
         "ldir" => inst_no_args(compile_data_2(0b11101101, 0b10110000, None), inst),
@@ -57,7 +62,7 @@ pub fn compile_instruction(inst: &Instruction, idx: usize) -> Result<CompileData
         "halt" => inst_no_args(compile_data_1(0b01110110, None), inst),
         "di" => inst_no_args(compile_data_1(0b11110011, None), inst),
         "ei" => inst_no_args(compile_data_1(0b11111011, None), inst),
-        "im" => compile_im(inst, idx),
+        "im" => compile_im(inst),
         // Call and Return Group
         "call" => todo!(),
         "ret" => todo!(),

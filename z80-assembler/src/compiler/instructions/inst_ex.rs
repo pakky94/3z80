@@ -4,7 +4,7 @@ use crate::compiler::instructions::{CompileData, CompileError};
 use crate::domain::enums::WideReg;
 use crate::domain::{Argument, Instruction};
 
-pub fn compile_ex(inst: &Instruction, _: usize) -> Result<CompileData, CompileError> {
+pub fn compile_ex(inst: &Instruction) -> Result<CompileData, CompileError> {
     match (&inst.arg0, &inst.arg1) {
         (Argument::WideReg(WideReg::DE), Argument::WideReg(WideReg::HL)) => {
             compile_data_1(0b11101011, None)

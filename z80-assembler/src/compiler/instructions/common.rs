@@ -91,32 +91,12 @@ pub fn compile_data_4(
     })
 }
 
-pub fn ph_s_val(idx: usize, label: String, line: usize) -> Option<Placeholder> {
-    Some(Placeholder {
-        idx,
-        label,
-        size: 1,
-        ph_type: PlaceholderType::Value,
-        line,
-    })
-}
+pub fn update_ph(p_idx: isize, delta_idx: usize, ph_size: u8, phs: &mut Vec<Placeholder>) {
+    if p_idx < 0 {
+        return;
+    }
 
-pub fn ph_w_val(idx: usize, label: String, line: usize) -> Option<Placeholder> {
-    Some(Placeholder {
-        idx,
-        label,
-        size: 2,
-        ph_type: PlaceholderType::Value,
-        line,
-    })
-}
-
-pub fn ph_addr(idx: usize, label: String, line: usize) -> Option<Placeholder> {
-    Some(Placeholder {
-        idx,
-        label,
-        size: 2,
-        ph_type: PlaceholderType::Address,
-        line,
-    })
+    let p_idx = usize::try_from(p_idx).unwrap();
+    phs[p_idx].idx += delta_idx;
+    phs[p_idx].size = ph_size;
 }

@@ -1,6 +1,6 @@
 use crate::compiler::instructions::common::*;
 use crate::compiler::instructions::errors::{guard_values_short, unimplemented_instr};
-use crate::compiler::instructions::{CompileData, CompileError};
+use crate::compiler::instructions::{CompileData, CompileError, Placeholder};
 use crate::domain::enums::{ShortReg, WideReg};
 use crate::domain::{Argument, Instruction};
 
@@ -19,30 +19,30 @@ const LD_DD_NN: u8 = 0b00000001;
 const LD_IX_NN_0: u8 = 0b11011101;
 const LD_IX_NN_1: u8 = 0b00100001;
 
-pub fn compile_ld(inst: &Instruction, idx: usize) -> Result<CompileData, CompileError> {
+pub fn compile_ld(
+    inst: &Instruction,
+    p0: isize,
+    p1: isize,
+    phs: &mut Vec<Placeholder>,
+) -> Result<CompileData, CompileError> {
     match (&inst.arg0, &inst.arg1) {
         (Argument::ShortReg(sr0), Argument::ShortReg(sr1)) => {
             let opcode = LD_R_R | (to_3bit_code(*sr0)? << 3) | to_3bit_code(*sr1)?;
             compile_data_1(opcode, None)
         }
         (Argument::ShortReg(sr0), Argument::Value(val)) => guard_values_short(0, *val, || {
+            update_ph(p1, 1, 1, phs);
             let opcode = LD_R_N | (to_3bit_code(*sr0)? << 3);
             compile_data_2(opcode, *val as u8, None)
         }),
-        (Argument::ShortReg(sr0), Argument::LabelValue(label)) => {
-            let opcode = LD_R_N | (to_3bit_code(*sr0)? << 3);
-            compile_data_2(opcode, 0, ph_s_val(idx + 1, label.clone(), inst.line))
-        }
         (Argument::ShortReg(ShortReg::A), Argument::RegAddress(WideReg::BC)) => {
             compile_data_1(0b00001010, None)
         }
         (Argument::ShortReg(ShortReg::A), Argument::RegAddress(WideReg::DE)) => {
             compile_data_1(0b00011010, None)
         }
-        (Argument::ShortReg(ShortReg::A), Argument::LabelAddress(label)) => {
-            compile_data_3(LD_A_NN, 0, 0, ph_addr(idx + 1, label.clone(), inst.line))
-        }
         (Argument::ShortReg(ShortReg::A), Argument::DirectAddress(addr)) => {
+            update_ph(p1, 1, 2, phs);
             compile_data_3(LD_A_NN, low_byte(*addr), high_byte(*addr), None)
         }
         (Argument::ShortReg(sr0), Argument::RegAddress(WideReg::HL)) => {

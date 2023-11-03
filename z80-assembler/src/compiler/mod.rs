@@ -62,7 +62,7 @@ where
                     self.out[ph.idx] = (*addr % 256) as u8;
                     self.out[ph.idx + 1] = (*addr / 256) as u8
                 }
-                (_, _) => panic!("Invalid placeholder type")
+                (_, _) => panic!("Invalid placeholder type"),
             }
         }
 
@@ -75,11 +75,15 @@ where
                 self.label_map.insert(l.name, self.idx);
             }
             ParseItem::Instruction(inst) => {
+                let (inst, p0, p1) = self.extract_placeholders(inst);
                 let inst = self.replace_constants(inst)?;
-                let data = compile_instruction(&inst, self.idx).map_err(|err| CompileError {
-                    error: err.error,
-                    instr: Some(inst.clone()),
-                })?;
+                let data =
+                    compile_instruction(&inst, p0, p1, &mut self.placeholders).map_err(|err| {
+                        CompileError {
+                            error: err.error,
+                            instr: Some(inst.clone()),
+                        }
+                    })?;
                 for i in 0..data.len {
                     self.out[self.idx] = data.data[i as usize];
                     self.idx += 1;
@@ -125,6 +129,59 @@ where
             )))
         } else {
             Ok(None)
+        }
+    }
+    fn extract_placeholders(&mut self, inst: Instruction) -> (Instruction, isize, isize) {
+        let (arg0, p0) = self.try_extract_placeholder(&inst.arg0, inst.line);
+        let (arg1, p1) = self.try_extract_placeholder(&inst.arg1, inst.line);
+        (
+            Instruction {
+                opcode: inst.opcode,
+                arg0: arg0.unwrap_or(inst.arg0),
+                arg1: arg1.unwrap_or(inst.arg1),
+                line: inst.line,
+            },
+            p0,
+            p1,
+        )
+    }
+
+    fn try_extract_placeholder(
+        &mut self,
+        arg: &Argument,
+        line: usize,
+    ) -> (Option<Argument>, isize) {
+        match arg {
+            Argument::LabelAddress(s) => {
+                self.placeholders.push(Placeholder {
+                    idx: self.idx,
+                    label: s.clone(),
+                    size: 0,
+                    ph_type: PlaceholderType::Address,
+                    line,
+                });
+                (
+                    Some(Argument::DirectAddress(0)),
+                    isize::try_from(self.placeholders.len()).unwrap() - 1,
+                )
+            }
+            Argument::LabelValue(s) => {
+                self.placeholders.push(Placeholder {
+                    idx: self.idx,
+                    label: s.clone(),
+                    size: 0,
+                    ph_type: PlaceholderType::Value,
+                    line,
+                });
+                (
+                    Some(Argument::Value(0)),
+                    isize::try_from(self.placeholders.len()).unwrap() - 1,
+                )
+            }
+            // Argument::LabelValue(s) => {
+            //     Some(Argument::Value(0))
+            // }
+            _ => (None, -1),
         }
     }
 }
@@ -179,7 +236,7 @@ ld e, (IX + 5h)
 ld l, (IY + a3h)
 "#.to_string(),
             )],
-        }, 1024);
+        }, 128);
 
         compare_memory(
             vec![

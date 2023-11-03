@@ -36,7 +36,10 @@ pub fn unimplemented_instr(instr: &Instruction) -> ! {
     )
 }
 
-pub fn unexpected_arguments(inst: &Instruction, arg: &Argument) -> Result<CompileData, CompileError> {
+pub fn unexpected_arguments(
+    inst: &Instruction,
+    arg: &Argument,
+) -> Result<CompileData, CompileError> {
     Err(CompileError {
         error: CompileErrorType::UnexpectedArgument(arg.clone()),
         instr: Some(inst.clone()),
