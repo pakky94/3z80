@@ -74,6 +74,23 @@ impl<'a> Tokenizer<'a> {
                     return Ok(Token::NewLine);
                 }
 
+                if *c == ';' {
+                    // comment
+                    loop {
+                        match self.chars.peek() {
+                            Some((_, '\n')) => {
+                                self.curr_line += 1;
+                                self.chars.next();
+                                return Ok(Token::NewLine);
+                            }
+                            Some(_) => {
+                                self.chars.next();
+                            }
+                            None => return Ok(Token::EOF),
+                        }
+                    }
+                }
+
                 if !c.is_whitespace() {
                     break;
                 }
