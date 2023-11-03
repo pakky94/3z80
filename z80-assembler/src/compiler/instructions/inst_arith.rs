@@ -14,6 +14,15 @@ pub fn inst_add(
 ) -> Result<CompileData, CompileError> {
     match (&inst.arg0, &inst.arg1) {
         (Argument::ShortReg(ShortReg::A), arg) => arith8(arg, p1, phs, ADD_CODES, inst),
+        (Argument::WideReg(WideReg::HL), Argument::WideReg(wr)) => {
+            compile_data_1(0b00001001 | (to_2bit_code(*wr)? << 4))
+        }
+        (Argument::WideReg(WideReg::IX), Argument::WideReg(wr)) => {
+            compile_data_2(0xDD, 0b00001001 | (to_2bit_code(*wr)? << 4))
+        }
+        (Argument::WideReg(WideReg::IY), Argument::WideReg(wr)) => {
+            compile_data_2(0xFD, 0b00001001 | (to_2bit_code(*wr)? << 4))
+        }
         _ => unimplemented_instr(&inst),
     }
 }
@@ -26,6 +35,9 @@ pub fn inst_adc(
 ) -> Result<CompileData, CompileError> {
     match (&inst.arg0, &inst.arg1) {
         (Argument::ShortReg(ShortReg::A), arg) => arith8(arg, p1, phs, ADC_CODES, inst),
+        (Argument::WideReg(WideReg::HL), Argument::WideReg(wr)) => {
+            compile_data_2(0xED, 0b01001010 | (to_2bit_code(*wr)? << 4))
+        }
         _ => unimplemented_instr(&inst),
     }
 }
@@ -50,6 +62,9 @@ pub fn inst_sbc(
 ) -> Result<CompileData, CompileError> {
     match (&inst.arg0, &inst.arg1) {
         (Argument::ShortReg(ShortReg::A), arg) => arith8(arg, p1, phs, SBC_CODES, inst),
+        (Argument::WideReg(WideReg::HL), Argument::WideReg(wr)) => {
+            compile_data_2(0xED, 0b01000010 | (to_2bit_code(*wr)? << 4))
+        }
         _ => unimplemented_instr(&inst),
     }
 }
