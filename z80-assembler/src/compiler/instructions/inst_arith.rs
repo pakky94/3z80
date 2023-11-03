@@ -54,6 +54,54 @@ pub fn inst_sbc(
     }
 }
 
+pub fn inst_and(
+    inst: &Instruction,
+    p0: isize,
+    _p1: isize,
+    phs: &mut Vec<Placeholder>,
+) -> Result<CompileData, CompileError> {
+    match (&inst.arg0, &inst.arg1) {
+        (arg, Argument::None) => arith8(arg, p0, phs, AND_CODES, inst),
+        _ => unimplemented_instr(&inst),
+    }
+}
+
+pub fn inst_or(
+    inst: &Instruction,
+    p0: isize,
+    _p1: isize,
+    phs: &mut Vec<Placeholder>,
+) -> Result<CompileData, CompileError> {
+    match (&inst.arg0, &inst.arg1) {
+        (arg, Argument::None) => arith8(arg, p0, phs, OR_CODES, inst),
+        _ => unimplemented_instr(&inst),
+    }
+}
+
+pub fn inst_xor(
+    inst: &Instruction,
+    p0: isize,
+    _p1: isize,
+    phs: &mut Vec<Placeholder>,
+) -> Result<CompileData, CompileError> {
+    match (&inst.arg0, &inst.arg1) {
+        (arg, Argument::None) => arith8(arg, p0, phs, XOR_CODES, inst),
+        _ => unimplemented_instr(&inst),
+    }
+}
+
+pub fn inst_cp(
+    inst: &Instruction,
+    p0: isize,
+    _p1: isize,
+    phs: &mut Vec<Placeholder>,
+) -> Result<CompileData, CompileError> {
+    match (&inst.arg0, &inst.arg1) {
+        (arg, Argument::None) => arith8(arg, p0, phs, CP_CODES, inst),
+        _ => unimplemented_instr(&inst),
+    }
+}
+
 fn arith8(
     arg: &Argument,
     p: isize,
@@ -129,4 +177,44 @@ const SBC_CODES: ArithGrCodes = ArithGrCodes {
     ix_d_1: 0x9E,
     iy_d_0: 0xFD,
     iy_d_1: 0x9E,
+};
+
+const AND_CODES: ArithGrCodes = ArithGrCodes {
+    r: 0b10100000,
+    n: 0xE6,
+    hl: 0xA6,
+    ix_d_0: 0xDD,
+    ix_d_1: 0xA6,
+    iy_d_0: 0xFD,
+    iy_d_1: 0xA6,
+};
+
+const OR_CODES: ArithGrCodes = ArithGrCodes {
+    r: 0b10110000,
+    n: 0xF6,
+    hl: 0xB6,
+    ix_d_0: 0xDD,
+    ix_d_1: 0xB6,
+    iy_d_0: 0xFD,
+    iy_d_1: 0xB6,
+};
+
+const XOR_CODES: ArithGrCodes = ArithGrCodes {
+    r: 0b10101000,
+    n: 0xEE,
+    hl: 0xAE,
+    ix_d_0: 0xDD,
+    ix_d_1: 0xAE,
+    iy_d_0: 0xFD,
+    iy_d_1: 0xAE,
+};
+
+const CP_CODES: ArithGrCodes = ArithGrCodes {
+    r: 0b10111000,
+    n: 0xFE,
+    hl: 0xBE,
+    ix_d_0: 0xDD,
+    ix_d_1: 0xBE,
+    iy_d_0: 0xFD,
+    iy_d_1: 0xBE,
 };

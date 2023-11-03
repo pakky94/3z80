@@ -5,7 +5,7 @@ use crate::compiler::instructions::errors::{
     guard_values_short, unexpected_arguments, unimplemented_instr,
 };
 pub use crate::compiler::instructions::errors::{label_not_found, CompileError, CompileErrorType};
-use crate::compiler::instructions::inst_arith::{inst_adc, inst_add, inst_sbc, inst_sub};
+use crate::compiler::instructions::inst_arith::{inst_adc, inst_add, inst_and, inst_cp, inst_or, inst_sbc, inst_sub, inst_xor};
 use crate::compiler::instructions::inst_ex::compile_ex;
 use crate::compiler::instructions::inst_im::compile_im;
 use crate::compiler::instructions::inst_ld::compile_ld;
@@ -60,6 +60,10 @@ pub fn compile_instruction(
         "adc" => inst_adc(inst, p0, p1, phs),
         "sub" => inst_sub(inst, p0, p1, phs),
         "sbc" => inst_sbc(inst, p0, p1, phs),
+        "and" => inst_and(inst, p0, p1, phs),
+        "or" => inst_or(inst, p0, p1, phs),
+        "xor" => inst_xor(inst, p0, p1, phs),
+        "cp" => inst_cp(inst, p0, p1, phs),
 
         // General-Purpose Arithmetic and CPU Control Groups
         "daa" => inst_no_args(compile_data_1(0b00100111), inst),
