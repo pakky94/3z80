@@ -1,5 +1,5 @@
 use crate::compiler::instructions::common::{
-    compile_data_1, compile_data_2, compile_data_3, to_3bit_code, update_ph,
+    compile_data_1, compile_data_2, compile_data_3, to_2bit_code, to_3bit_code, update_ph,
 };
 use crate::compiler::instructions::errors::{guard_values_short, unimplemented_instr};
 use crate::compiler::instructions::{CompileData, CompileError, Placeholder, PlaceholderType};
@@ -160,6 +160,7 @@ fn offset(
         Argument::RegOffsetAddress(WideReg::IY, offset) => guard_values_short(0, *offset, || {
             compile_data_3(codes.iy_d_0, codes.iy_d_1, *offset as u8)
         }),
+        Argument::WideReg(wr) => compile_data_1(codes.ss | (to_2bit_code(*wr)? << 4)),
         _ => unimplemented_instr(inst),
     }
 }
@@ -172,6 +173,7 @@ struct ArithGrCodes {
     ix_d_1: u8,
     iy_d_0: u8,
     iy_d_1: u8,
+    ss: u8,
 }
 
 const ADD_CODES: ArithGrCodes = ArithGrCodes {
@@ -182,6 +184,7 @@ const ADD_CODES: ArithGrCodes = ArithGrCodes {
     ix_d_1: 0x86,
     iy_d_0: 0xFD,
     iy_d_1: 0x86,
+    ss: 0,
 };
 
 const ADC_CODES: ArithGrCodes = ArithGrCodes {
@@ -192,6 +195,7 @@ const ADC_CODES: ArithGrCodes = ArithGrCodes {
     ix_d_1: 0x8E,
     iy_d_0: 0xFD,
     iy_d_1: 0x8E,
+    ss: 0,
 };
 
 const SUB_CODES: ArithGrCodes = ArithGrCodes {
@@ -202,6 +206,7 @@ const SUB_CODES: ArithGrCodes = ArithGrCodes {
     ix_d_1: 0x96,
     iy_d_0: 0xFD,
     iy_d_1: 0x96,
+    ss: 0,
 };
 
 const SBC_CODES: ArithGrCodes = ArithGrCodes {
@@ -212,6 +217,7 @@ const SBC_CODES: ArithGrCodes = ArithGrCodes {
     ix_d_1: 0x9E,
     iy_d_0: 0xFD,
     iy_d_1: 0x9E,
+    ss: 0,
 };
 
 const AND_CODES: ArithGrCodes = ArithGrCodes {
@@ -222,6 +228,7 @@ const AND_CODES: ArithGrCodes = ArithGrCodes {
     ix_d_1: 0xA6,
     iy_d_0: 0xFD,
     iy_d_1: 0xA6,
+    ss: 0,
 };
 
 const OR_CODES: ArithGrCodes = ArithGrCodes {
@@ -232,6 +239,7 @@ const OR_CODES: ArithGrCodes = ArithGrCodes {
     ix_d_1: 0xB6,
     iy_d_0: 0xFD,
     iy_d_1: 0xB6,
+    ss: 0,
 };
 
 const XOR_CODES: ArithGrCodes = ArithGrCodes {
@@ -242,6 +250,7 @@ const XOR_CODES: ArithGrCodes = ArithGrCodes {
     ix_d_1: 0xAE,
     iy_d_0: 0xFD,
     iy_d_1: 0xAE,
+    ss: 0,
 };
 
 const CP_CODES: ArithGrCodes = ArithGrCodes {
@@ -252,6 +261,7 @@ const CP_CODES: ArithGrCodes = ArithGrCodes {
     ix_d_1: 0xBE,
     iy_d_0: 0xFD,
     iy_d_1: 0xBE,
+    ss: 0,
 };
 
 const INC_CODES: ArithGrCodes = ArithGrCodes {
@@ -262,6 +272,7 @@ const INC_CODES: ArithGrCodes = ArithGrCodes {
     ix_d_1: 0x34,
     iy_d_0: 0xFD,
     iy_d_1: 0x34,
+    ss: 0b00000011,
 };
 
 const DEC_CODES: ArithGrCodes = ArithGrCodes {
@@ -272,4 +283,5 @@ const DEC_CODES: ArithGrCodes = ArithGrCodes {
     ix_d_1: 0x35,
     iy_d_0: 0xFD,
     iy_d_1: 0x35,
+    ss: 0b00001011,
 };

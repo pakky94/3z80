@@ -406,9 +406,24 @@ RST 0h
 
         compare_memory(
             vec![
-                0b11011111,
-                0b11110111,
-                0b11000111,
+                0b00001110, // LD C, 80h
+                0x80,
+                0b00100001, // LD HL, @Inbuf
+                0x00,
+                0xA0,
+                0b00010001, // LD DE, @Outbuf
+                0x00,
+                0xA1,
+                0b01111110, // LD A, (HL)    .LOOP:
+                0x12,       // LD (DE), A
+                0xFE,       // CP 0Dh
+                0x0D,
+                0x28,       // JR Z, &DONE
+                4,
+                0b00100011, // INC HL
+                0b00010011, // INC DE
+                0x10,       // DJNZ &LOOP
+                -10i8 as u8,
             ],
             compiler.compile().unwrap(),
         );

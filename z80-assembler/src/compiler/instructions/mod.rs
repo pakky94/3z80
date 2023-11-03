@@ -11,6 +11,7 @@ use crate::compiler::instructions::inst_arith::{
 };
 use crate::compiler::instructions::inst_ex::compile_ex;
 use crate::compiler::instructions::inst_im::compile_im;
+use crate::compiler::instructions::inst_jump::{inst_djnz, inst_jp, inst_jr};
 use crate::compiler::instructions::inst_ld::compile_ld;
 use crate::domain::{Argument, Instruction};
 
@@ -19,6 +20,7 @@ mod errors;
 mod inst_arith;
 mod inst_ex;
 mod inst_im;
+mod inst_jump;
 mod inst_ld;
 
 pub struct CompileData {
@@ -86,15 +88,15 @@ pub fn compile_instruction(
         "ei" => inst_no_args(compile_data_1(0b11111011), inst),
         "im" => compile_im(inst, p0, phs),
         // Call and Return Group
-        "call" => compile_call(&inst, p0, p1, phs),
-        "ret" => compile_ret(&inst),
+        "call" => compile_call(inst, p0, p1, phs),
+        "ret" => compile_ret(inst),
         "reti" => inst_no_args(compile_data_2(0xED, 0x4D), inst),
         "retn" => inst_no_args(compile_data_2(0xED, 0x45), inst),
         "rst" => compile_rst(&inst),
         // Jump Group
-        "jp" => todo!(),
-        "jr" => todo!(),
-        "djnz" => todo!(),
+        "jp" => inst_jp(inst, p0, p1, phs),
+        "jr" => inst_jr(inst, p0, p1, phs),
+        "djnz" => inst_djnz(inst, p0, phs),
         _ => unimplemented_instr(&inst),
     }
 }
