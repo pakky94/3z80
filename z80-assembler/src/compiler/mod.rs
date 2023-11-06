@@ -89,13 +89,12 @@ where
             ParseItem::Instruction(inst) => {
                 let (inst, p0, p1) = self.extract_placeholders(inst);
                 let inst = self.replace_constants(inst)?;
-                let data =
-                    compile_instruction(&inst, p0, p1, &mut self.placeholders).map_err(|err| {
-                        CompileError {
-                            error: err.error,
-                            instr: Some(inst.clone()),
-                        }
-                    })?;
+                let data = compile_instruction(&inst, p0, p1, &mut self.placeholders).map_err(
+                    |mut err| {
+                        err.instr = Some(inst.clone());
+                        err
+                    },
+                )?;
                 for i in 0..data.len {
                     self.out[self.idx] = data.data[i as usize];
                     self.idx += 1;

@@ -45,7 +45,7 @@ impl<'a> Parser<'a> {
                     continue;
                 }
                 Token::At => self.parse_constant()?,
-                Token::Directive(s) => self.parse_directive()?,
+                Token::Directive(_) => self.parse_directive()?,
                 Token::EOF => break,
                 _ => unimplemented!("unexpected token {:?} - {:?}", t, self.items),
             };
