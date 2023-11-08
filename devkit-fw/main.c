@@ -21,12 +21,13 @@ const uint D_6 = 27;
 const uint D_7 = 28;
 const uint D_8 = 29;
 
+void write_data();
 void init_io_pins();
 void set_addr_pins_dir(int);
 void set_data_pins_dir(int);
 void write_addr_pins(uint data);
 void write_data_pins(uint data);
-uint read_data_pins();
+char read_data_pins();
 
 int main() {
     stdio_init_all();
@@ -34,7 +35,7 @@ int main() {
     init_io_pins();
 
     set_addr_pins_dir(GPIO_OUT);
-    set_data_pins_dir(GPIO_OUT);
+    set_data_pins_dir(GPIO_IN);
 
     char command;
 
@@ -43,13 +44,37 @@ int main() {
 
 	switch (command) {
 	    case 100:
-		printf("test 123\n");
+		write_data();
                 break;
 
+	    case 'r':
+                printf("r: '%d'\n", read_data_pins());
+		break;
+
 	    default:
+		printf(" - %c\n", command);
 	        break;
 	}
     }
+}
+
+void write_data() {
+    char addr_high, addr_low;
+    scanf("%c", &addr_high);
+    scanf("%c", &addr_low);
+
+    char* data[256];
+    for (int i=0; i<256; i++) {
+	scanf("%c", &data[i]);
+    }
+
+    printf("addr: %c%c\n", addr_high, addr_low);
+    printf("addr: %c%c\n", addr_high, addr_low);
+
+    for (int i=0; i<256; i++) {
+	printf("%c", data[i]);
+    }
+    printf("\n");
 }
 
 void write_addr_pins(uint data) {
@@ -74,15 +99,15 @@ void write_data_pins(uint data) {
     gpio_put(D_8, (data & 128) >> 7);
 }
 
-uint read_data_pins() {
-    return (gpio_get(A_1) >> 7)
-         & (gpio_get(A_2) >> 6)
-	 & (gpio_get(A_3) >> 5)
-	 & (gpio_get(A_4) >> 4)
-         & (gpio_get(A_5) >> 3)
-         & (gpio_get(A_6) >> 2)
-         & (gpio_get(A_7) >> 1)
-         & gpio_get(A_8);
+char read_data_pins() {
+    return gpio_get(D_1)
+         | (gpio_get(D_2) << 1)
+	 | (gpio_get(D_3) << 2)
+	 | (gpio_get(D_4) << 3)
+         | (gpio_get(D_5) << 4)
+         | (gpio_get(D_6) << 5)
+         | (gpio_get(D_7) << 6)
+         | (gpio_get(D_8) << 7);
 }
 
 void set_addr_pins_dir(int dir) {
