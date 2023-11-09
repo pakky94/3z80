@@ -14,6 +14,7 @@ use crate::compiler::instructions::inst_im::compile_im;
 use crate::compiler::instructions::inst_inout::{compile_in, compile_out};
 use crate::compiler::instructions::inst_jump::{inst_djnz, inst_jp, inst_jr};
 use crate::compiler::instructions::inst_ld::compile_ld;
+use crate::compiler::instructions::inst_rot_shift::{inst_rl, inst_rlc};
 use crate::compiler::instructions::instr_stack::{compile_pop, compile_push};
 use crate::domain::{Argument, Instruction};
 
@@ -25,6 +26,7 @@ mod inst_im;
 mod inst_inout;
 mod inst_jump;
 mod inst_ld;
+mod inst_rot_shift;
 mod instr_stack;
 
 pub struct CompileData {
@@ -92,6 +94,18 @@ pub fn compile_instruction(
         "di" => inst_no_args(compile_data_1(0b11110011), inst),
         "ei" => inst_no_args(compile_data_1(0b11111011), inst),
         "im" => compile_im(inst, p0, phs),
+        // Rotate and Shift Group
+        "rlca" => inst_no_args(compile_data_1(0x07), inst),
+        "rla" => inst_no_args(compile_data_1(0x17), inst),
+        "rrca" => inst_no_args(compile_data_1(0x0F), inst),
+        "rra" => inst_no_args(compile_data_1(0x1F), inst),
+        "rlc" => inst_rlc(&inst),
+        "rl" => inst_rl(&inst),
+        // TODO: missing instr
+
+        // Bit Set, Reset, and Test Group
+        // TODO: missing instr
+
         // Jump Group
         "jp" => inst_jp(inst, p0, p1, phs),
         "jr" => inst_jr(inst, p0, p1, phs),
