@@ -14,7 +14,7 @@ use crate::compiler::instructions::inst_im::compile_im;
 use crate::compiler::instructions::inst_inout::{compile_in, compile_out};
 use crate::compiler::instructions::inst_jump::{inst_djnz, inst_jp, inst_jr};
 use crate::compiler::instructions::inst_ld::compile_ld;
-use crate::compiler::instructions::inst_rot_shift::{inst_rl, inst_rlc};
+use crate::compiler::instructions::inst_rot_shift::{inst_rl, inst_rlc, inst_rr, inst_rrc, inst_sla, inst_sra, inst_srl};
 use crate::compiler::instructions::instr_stack::{compile_pop, compile_push};
 use crate::domain::{Argument, Instruction};
 
@@ -101,6 +101,13 @@ pub fn compile_instruction(
         "rra" => inst_no_args(compile_data_1(0x1F), inst),
         "rlc" => inst_rlc(&inst),
         "rl" => inst_rl(&inst),
+        "rrc" => inst_rrc(&inst),
+        "rr" => inst_rr(&inst),
+        "sla" => inst_sla(&inst),
+        "sra" => inst_sra(&inst),
+        "srl" => inst_srl(&inst),
+        "rld" => inst_no_args(compile_data_2(0xED, 0x6F), inst),
+        "rrd" => inst_no_args(compile_data_2(0xED, 0x67), inst),
         // TODO: missing instr
 
         // Bit Set, Reset, and Test Group
