@@ -12,6 +12,7 @@ pub struct CompileError {
 pub enum CompileErrorType {
     ParseError(ParseError),
     ExpectedShortArgument(usize, u16),
+    ExpectedBitArgument(usize, u16),
     LabelNotFound(String, usize),
     UnexpectedArgument(Argument),
     ConstantNotFound(String),

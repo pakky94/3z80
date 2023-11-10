@@ -9,18 +9,22 @@ use crate::compiler::instructions::inst_arith::{
     inst_adc, inst_add, inst_and, inst_cp, inst_dec, inst_inc, inst_or, inst_sbc, inst_sub,
     inst_xor,
 };
+use crate::compiler::instructions::inst_bit::{inst_bit, inst_res, inst_set};
 use crate::compiler::instructions::inst_ex::compile_ex;
 use crate::compiler::instructions::inst_im::compile_im;
 use crate::compiler::instructions::inst_inout::{compile_in, compile_out};
 use crate::compiler::instructions::inst_jump::{inst_djnz, inst_jp, inst_jr};
 use crate::compiler::instructions::inst_ld::compile_ld;
-use crate::compiler::instructions::inst_rot_shift::{inst_rl, inst_rlc, inst_rr, inst_rrc, inst_sla, inst_sra, inst_srl};
+use crate::compiler::instructions::inst_rot_shift::{
+    inst_rl, inst_rlc, inst_rr, inst_rrc, inst_sla, inst_sra, inst_srl,
+};
 use crate::compiler::instructions::instr_stack::{compile_pop, compile_push};
 use crate::domain::{Argument, Instruction};
 
 pub mod common;
 mod errors;
 mod inst_arith;
+mod inst_bit;
 mod inst_ex;
 mod inst_im;
 mod inst_inout;
@@ -108,11 +112,10 @@ pub fn compile_instruction(
         "srl" => inst_srl(&inst),
         "rld" => inst_no_args(compile_data_2(0xED, 0x6F), inst),
         "rrd" => inst_no_args(compile_data_2(0xED, 0x67), inst),
-        // TODO: missing instr
-
         // Bit Set, Reset, and Test Group
-        // TODO: missing instr
-
+        "bit" => inst_bit(&inst, p0),
+        "set" => inst_set(&inst, p0),
+        "res" => inst_res(&inst, p0),
         // Jump Group
         "jp" => inst_jp(inst, p0, p1, phs),
         "jr" => inst_jr(inst, p0, p1, phs),
