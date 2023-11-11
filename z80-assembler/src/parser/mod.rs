@@ -1,6 +1,7 @@
 use crate::domain::conditions::{condition_allowed, parse_condition};
 use crate::domain::register::{parse_register, ParsedRegister};
 use crate::domain::*;
+use crate::domain::enums::WideReg;
 pub use crate::parser::errors::ParseError;
 use crate::parser::errors::UnexpectedToken;
 use crate::parser::token::Token;
@@ -169,7 +170,11 @@ impl<'a> Parser<'a> {
                 } else {
                     if let ParsedRegister::WideReg(wr) = parse_register(&i) {
                         self.tokenizer.expect(Token::CloseParen)?;
-                        Ok(Argument::WideRegAddress(wr))
+                        if wr == WideReg::IX || wr == WideReg::IY {
+                            Ok(Argument::RegOffsetAddress(wr, 0))
+                        } else {
+                            Ok(Argument::WideRegAddress(wr))
+                        }
                     } else {
                         unimplemented!()
                     }
@@ -260,12 +265,12 @@ add b, 8h"#,
 
     #[test]
     fn test_parse_address_reg_argument() {
-        let parser = Parser::new("ld A, (IX)");
+        let parser = Parser::new("ld A, (HL)");
         assert_eq!(
             ParseItem::Instruction(Instruction {
                 opcode: "ld".to_string(),
                 arg0: Argument::ShortReg(ShortReg::A),
-                arg1: Argument::WideRegAddress(WideReg::IX),
+                arg1: Argument::WideRegAddress(WideReg::HL),
                 line: 1,
             }),
             *parser.parse().unwrap().items.get(0).unwrap()

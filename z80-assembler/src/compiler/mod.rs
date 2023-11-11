@@ -429,6 +429,112 @@ RST 0h
         );
     }
 
+    #[test]
+    #[rustfmt::skip]
+    fn test_compile_16bit_multiplication() {
+        let compiler = Compiler::new(InMemorySourceProvider {
+            files: vec![(
+                SourceHeader { filename: "main.z80".to_string(), }, r#"
+.Mult16:
+            LD   B,   10h           ; number of bits init
+            LD   C,   D             ; move multiplier
+            LD   A,   E             ;
+            EX   DE,  HL            ; move multiplicand
+            LD   HL,  0h            ; clear partial result
+.mloop:     SRL  C                  ; shift multiplier right
+            RRA                     ; least-significat bit is in carry
+            JR   NC,  &noadd        ; skip add if no carry
+            ADD  HL,  DE            ; else add multiplicand to partialresult
+.noadd:     EX   DE,  HL            ; shift multiplicand left
+            ADD  HL,  HL            ; by multiplying it by two
+            EX   DE,  HL            ;
+            DJNZ &mloop             ; repeat until no more bits
+            RET                     ;
+"#.to_string(),
+            )],
+        }, 1024);
+
+        compare_memory(
+            vec![
+                0x06, 0x10,
+                0x4A,
+                0x7B,
+                0xEB,
+                0x21, 0x00, 0x00,
+                0xCB, 0x39,
+                0x1F,
+                0x30, 0x01,
+                0x19,
+                0xEB,
+                0x29,
+                0xEB,
+                0x10, 0xF5,
+                0xC9,
+            ],
+            compiler.compile().unwrap(),
+        );
+    }
+
+    #[test]
+    #[rustfmt::skip]
+    fn test_compile_bubble_sort() {
+        let compiler = Compiler::new(InMemorySourceProvider {
+            files: vec![(
+                SourceHeader { filename: "main.z80".to_string(), }, r#"
+.BSort:
+@flag:  0h
+            LD   &data, HL          ; save data address
+.loop:      RES  @flag, H           ; initialize exchange flag
+            LD   B,     C           ; initialize length counter
+            DEC  B                  ; adjust for testing
+            LD   IX,    &data       ; initialize array pointer
+.next:      LD   A,     (IX)        ; first element in comparison
+            LD   D,     A           ; temporary storage for element
+            LD   E,     (IX+1h)     ; second element in comparison
+            SUB  E                  ; comparison first to second
+            JR   NC,    &noex       ; if first > second, no jump
+            LD   (IX),  E           ; exchange array elements
+            LD   (IX+1h), D
+            SET  @flag, H           ; record exchange occurred
+.noex:      INC  IX                 ; point to next data element
+            DJNZ &next              ; count number of comparisons, repeat if more data pairs
+            BIT  @flag, H           ; etermine if exchange occurred
+            JR   NZ, &loop          ; continue if data unsorted
+            RET
+
+.data:      0000h
+.test:      01h
+"#.to_string(),
+            )],
+        }, 1024);
+
+        compare_memory(
+            vec![
+                0x22, 0x26, 0x00,
+                0xCB, 0x84,
+                0x41,
+                0x05,
+                0xDD, 0x2A, 0x26, 0x00,
+                0xDD, 0x7E, 0x00,
+                0x57,
+                0xDD, 0x5E, 0x01,
+                0x93,
+                0x30, 0x08,
+                0xDD, 0x73, 0x00,
+                0xDD, 0x72, 0x01,
+                0xCB, 0xC4,
+                0xDD, 0x23,
+                0x10, 0xEA,
+                0xCB, 0x44,
+                0x20, 0xDE,
+                0xC9,
+                0x00, 0x00,
+                0x01,
+            ],
+            compiler.compile().unwrap(),
+        );
+    }
+
     fn compare_memory(expected: Vec<u8>, actual: Vec<u8>) {
         if actual.len() < expected.len() {
             eprintln!("expected: {:?}, actual {:?}", expected.len(), actual.len());
