@@ -17,6 +17,8 @@ void write_addr_pins(uint data) {
 }
 
 void write_data_pins(uint data) {
+    set_data_pins_dir(GPIO_OUT);
+
     gpio_put(D_1, data & 1);
     gpio_put(D_2, (data & 2) >> 1);
     gpio_put(D_3, (data & 4) >> 2);
