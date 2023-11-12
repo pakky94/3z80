@@ -1,7 +1,7 @@
 use crate::domain::conditions::{condition_allowed, parse_condition};
+use crate::domain::enums::WideReg;
 use crate::domain::register::{parse_register, ParsedRegister};
 use crate::domain::*;
-use crate::domain::enums::WideReg;
 pub use crate::parser::errors::ParseError;
 use crate::parser::errors::UnexpectedToken;
 use crate::parser::token::Token;
