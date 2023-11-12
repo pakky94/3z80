@@ -1,5 +1,6 @@
 mod config;
 mod devkit_thread;
+mod protocol;
 
 use crate::config::Config;
 use crate::devkit_thread::DevkitCommand::ConnectSerial;
@@ -20,23 +21,21 @@ pub fn run() {
 }
 
 fn control_loop(
-    handle: JoinHandle<()>,
+    handle: JoinHandle<Result<(), Box<dyn Error + Send + Sync + 'static>>>,
     tx: Sender<DevkitCommand>,
-) -> Result<(), Box<dyn Error + 'static>> {
+) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
     let config = Config::default();
 
     connect_port(&tx, &config)?;
 
     tx.send(DevkitCommand::End)?;
-    handle
-        .join()
-        .or_else(|_| Err(Box::new(ThreadError {}).into()))
+    handle.join().unwrap()
 }
 
 fn connect_port(
     tx: &Sender<DevkitCommand>,
     config: &Config,
-) -> Result<(), Box<dyn Error + 'static>> {
+) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
     let ports = serialport::available_ports().expect("No ports found!");
     for (i, p) in ports.iter().enumerate() {
         println!(" {}: {}", i, p.port_name);
