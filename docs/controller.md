@@ -4,6 +4,8 @@
 
 Uses GX12 7pin connector with the same pinout/protocol as the SNES controller:
 
+![GX12 7pin pinout](imgs/GX12_7pin_pinout.png)
+
 |  Line |  Port |
 |-------|-------|
 |   1   |  +5V  |
