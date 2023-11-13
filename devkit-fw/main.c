@@ -20,19 +20,19 @@ int main() {
     while (true) {
         scanf("%c", &command);
 
-	switch (command) {
-	    case 100:
-		write_data();
+        switch (command) {
+            case 100:
+            write_data();
+            break;
+
+            case 'r':
+                printf("r: '%d'\n", read_data_pins());
                 break;
 
-	    case 'r':
-                printf("r: '%d'\n", read_data_pins());
-		break;
-
-	    default:
-		printf(" - %c\n", command);
-	        break;
-	}
+            default:
+                printf(" - %c\n", command);
+                break;
+        }
     }
 }
 
@@ -42,14 +42,14 @@ void write_data() {
     scanf("%c", &addr_low);
     char* data[256];
     for (int i=0; i<256; i++) {
-	scanf("%c", &data[i]);
+        scanf("%c", &data[i]);
     }
 
     printf("addr: %c%c\n", addr_high, addr_low);
     printf("addr: %c%c\n", addr_high, addr_low);
 
     for (int i=0; i<256; i++) {
-	printf("%c", data[i]);
+        printf("%c", data[i]);
     }
     printf("\n");
 }

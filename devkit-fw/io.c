@@ -34,8 +34,8 @@ char read_data_pins() {
 
     return gpio_get(D_1)
          | (gpio_get(D_2) << 1)
-	 | (gpio_get(D_3) << 2)
-	 | (gpio_get(D_4) << 3)
+         | (gpio_get(D_3) << 2)
+         | (gpio_get(D_4) << 3)
          | (gpio_get(D_5) << 4)
          | (gpio_get(D_6) << 5)
          | (gpio_get(D_7) << 6)
