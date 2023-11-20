@@ -87,4 +87,32 @@ void init_io_pins() {
     gpio_init(D_6);
     gpio_init(D_7);
     gpio_init(D_8);
+
+    gpio_init(SR_OE_N);
+    gpio_init(SR_LATCH);
+    gpio_init(SR_DATA);
+    gpio_init(SR_CLOCK);
+
+    gpio_set_dir(SR_OE_N, GPIO_OUT);
+    gpio_set_dir(SR_LATCH, GPIO_OUT);
+    gpio_set_dir(SR_DATA, GPIO_OUT);
+    gpio_set_dir(SR_CLOCK, GPIO_OUT);
+}
+
+void set_shiftreg_value(uint value) {
+    gpio_put(SR_LATCH, 0);
+    gpio_put(SR_DATA, 0);
+
+    for (int i = 15; i >= 0; i--) {
+        gpio_put(SR_CLOCK, 0);
+        gpio_put(SR_DATA, value & (1 << i));
+        gpio_put(SR_CLOCK, 1);
+    }
+
+    gpio_put(SR_CLOCK, 0);
+    gpio_put(SR_LATCH, 1);
+}
+
+void set_shiftreg_output_enabled(bool enabled) {
+    gpio_put(SR_OE_N, !enabled);
 }
