@@ -4,7 +4,7 @@ use crate::domain::register::{parse_register, ParsedRegister};
 use crate::domain::*;
 pub use crate::parser::errors::ParseError;
 use crate::parser::errors::UnexpectedToken;
-use crate::parser::token::{TokenValue};
+use crate::parser::token::TokenValue;
 use crate::parser::tokenizer::Tokenizer;
 
 mod errors;
@@ -45,7 +45,7 @@ impl<'a> Parser<'a> {
                 TokenValue::EOF => break,
                 _ => unimplemented!("unexpected token {:?} - {:?}", t, self.items),
             };
-            return Ok(Some(r))
+            return Ok(Some(r));
         }
 
         Ok(None)
@@ -412,10 +412,7 @@ RET M
         );
         let res = parse_all(parser);
         assert_eq!(ParseItem::Data(vec![21u8]), *res.get(1).unwrap());
-        assert_eq!(
-            ParseItem::Data(vec![21u8, 170u8]),
-            *res.get(3).unwrap()
-        );
+        assert_eq!(ParseItem::Data(vec![21u8, 170u8]), *res.get(3).unwrap());
     }
 
     #[test]

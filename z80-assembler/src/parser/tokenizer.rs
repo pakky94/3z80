@@ -128,11 +128,14 @@ impl<'a> Tokenizer<'a> {
                         }
                         _ => {
                             let end = (*p).clone();
-                            return Ok(self.create_token(parse_identifier_or_value(&self.source[start..end])))
-                        },
+                            return Ok(self
+                                .create_token(parse_identifier_or_value(&self.source[start..end])));
+                        }
                     }
                 } else {
-                    return Ok(self.create_token(parse_identifier_or_value(&self.source[start..end])));
+                    return Ok(
+                        self.create_token(parse_identifier_or_value(&self.source[start..end]))
+                    );
                 }
             }
         } else {
@@ -163,8 +166,10 @@ impl<'a> Tokenizer<'a> {
                     match c {
                         '\n' => {
                             let end = (*p).clone();
-                            return Ok(self.create_token(TokenValue::Directive(self.source[start..end].to_string())))
-                        },
+                            return Ok(self.create_token(TokenValue::Directive(
+                                self.source[start..end].to_string(),
+                            )));
+                        }
                         _ => {
                             end = (*p).clone() + 1;
                             let _ = self.chars.next();
@@ -172,7 +177,8 @@ impl<'a> Tokenizer<'a> {
                         }
                     }
                 } else {
-                    return Ok(self.create_token(TokenValue::Directive(self.source[start..end].to_string())));
+                    return Ok(self
+                        .create_token(TokenValue::Directive(self.source[start..end].to_string())));
                 }
             }
         } else {
@@ -223,7 +229,8 @@ mod tests {
 ADD    INC
 .label2:
 "#,
-        0);
+            0,
+        );
 
         assert_eq!(TokenValue::NewLine, parser.next().unwrap().token);
         assert_eq!(TokenValue::Dot, parser.next().unwrap().token);
@@ -233,8 +240,14 @@ ADD    INC
         );
         assert_eq!(TokenValue::Colon, parser.next().unwrap().token);
         assert_eq!(TokenValue::NewLine, parser.next().unwrap().token);
-        assert_eq!(TokenValue::Identifier("ADD".to_string()), parser.next().unwrap().token);
-        assert_eq!(TokenValue::Identifier("INC".to_string()), parser.next().unwrap().token);
+        assert_eq!(
+            TokenValue::Identifier("ADD".to_string()),
+            parser.next().unwrap().token
+        );
+        assert_eq!(
+            TokenValue::Identifier("INC".to_string()),
+            parser.next().unwrap().token
+        );
         assert_eq!(TokenValue::NewLine, parser.next().unwrap().token);
         assert_eq!(TokenValue::Dot, parser.next().unwrap().token);
         assert_eq!(
@@ -248,8 +261,14 @@ ADD    INC
     fn test_short_value() {
         let mut parser = Tokenizer::new(r"add a, 3Ah", 0);
 
-        assert_eq!(TokenValue::Identifier("add".to_string()), parser.next().unwrap().token);
-        assert_eq!(TokenValue::Identifier("a".to_string()), parser.next().unwrap().token);
+        assert_eq!(
+            TokenValue::Identifier("add".to_string()),
+            parser.next().unwrap().token
+        );
+        assert_eq!(
+            TokenValue::Identifier("a".to_string()),
+            parser.next().unwrap().token
+        );
         assert_eq!(TokenValue::Comma, parser.next().unwrap().token);
         assert_eq!(TokenValue::Value(58, 1), parser.next().unwrap().token);
     }
@@ -258,8 +277,14 @@ ADD    INC
     fn test_wide_value() {
         let mut parser = Tokenizer::new(r"add a, 3bAh", 0);
 
-        assert_eq!(TokenValue::Identifier("add".to_string()), parser.next().unwrap().token);
-        assert_eq!(TokenValue::Identifier("a".to_string()), parser.next().unwrap().token);
+        assert_eq!(
+            TokenValue::Identifier("add".to_string()),
+            parser.next().unwrap().token
+        );
+        assert_eq!(
+            TokenValue::Identifier("a".to_string()),
+            parser.next().unwrap().token
+        );
         assert_eq!(TokenValue::Comma, parser.next().unwrap().token);
         assert_eq!(TokenValue::Value(954, 2), parser.next().unwrap().token);
     }
@@ -269,10 +294,17 @@ ADD    INC
         let mut parser = Tokenizer::new(
             r#"ld bc, (2130h)
 call"#,
-        0);
+            0,
+        );
 
-        assert_eq!(TokenValue::Identifier("ld".to_string()), parser.next().unwrap().token);
-        assert_eq!(TokenValue::Identifier("bc".to_string()), parser.next().unwrap().token);
+        assert_eq!(
+            TokenValue::Identifier("ld".to_string()),
+            parser.next().unwrap().token
+        );
+        assert_eq!(
+            TokenValue::Identifier("bc".to_string()),
+            parser.next().unwrap().token
+        );
         assert_eq!(TokenValue::Comma, parser.next().unwrap().token);
         assert_eq!(TokenValue::OpenParen, parser.next().unwrap().token);
         assert_eq!(TokenValue::Value(8496, 2), parser.next().unwrap().token);
@@ -289,7 +321,10 @@ call"#,
     fn test_address_reg() {
         let mut parser = Tokenizer::new(r#"(BC)"#, 0);
         assert_eq!(TokenValue::OpenParen, parser.next().unwrap().token);
-        assert_eq!(TokenValue::Identifier("BC".to_string()), parser.next().unwrap().token);
+        assert_eq!(
+            TokenValue::Identifier("BC".to_string()),
+            parser.next().unwrap().token
+        );
         assert_eq!(TokenValue::CloseParen, parser.next().unwrap().token);
     }
 
@@ -297,7 +332,10 @@ call"#,
     fn test_address_reg_offset() {
         let mut parser = Tokenizer::new(r#"(BC + 9h)"#, 0);
         assert_eq!(TokenValue::OpenParen, parser.next().unwrap().token);
-        assert_eq!(TokenValue::Identifier("BC".to_string()), parser.next().unwrap().token);
+        assert_eq!(
+            TokenValue::Identifier("BC".to_string()),
+            parser.next().unwrap().token
+        );
         assert_eq!(TokenValue::Plus, parser.next().unwrap().token);
         assert_eq!(TokenValue::Value(9, 1), parser.next().unwrap().token);
         assert_eq!(TokenValue::CloseParen, parser.next().unwrap().token);
@@ -307,9 +345,18 @@ call"#,
     fn test_peek_next() {
         let mut parser = Tokenizer::new(r"add a, 3Ah", 0);
 
-        assert_eq!(TokenValue::Identifier("add".to_string()), parser.peek().unwrap().token);
-        assert_eq!(TokenValue::Identifier("add".to_string()), parser.next().unwrap().token);
-        assert_eq!(TokenValue::Identifier("a".to_string()), parser.next().unwrap().token);
+        assert_eq!(
+            TokenValue::Identifier("add".to_string()),
+            parser.peek().unwrap().token
+        );
+        assert_eq!(
+            TokenValue::Identifier("add".to_string()),
+            parser.next().unwrap().token
+        );
+        assert_eq!(
+            TokenValue::Identifier("a".to_string()),
+            parser.next().unwrap().token
+        );
         assert_eq!(TokenValue::Comma, parser.peek().unwrap().token);
         assert_eq!(TokenValue::Comma, parser.next().unwrap().token);
         assert_eq!(TokenValue::Value(58, 1), parser.next().unwrap().token);
