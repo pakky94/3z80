@@ -34,5 +34,7 @@ void write_data_pins(uint data);
 char read_data_pins();
 void set_shiftreg_value(uint value);
 void set_shiftreg_output_enabled(bool enabled);
+void set_mem_write(bool enabled);
+void set_mem_read(bool enabled);
 
 #endif

@@ -116,3 +116,11 @@ void set_shiftreg_value(uint value) {
 void set_shiftreg_output_enabled(bool enabled) {
     gpio_put(SR_OE_N, !enabled);
 }
+
+void set_mem_write(bool enabled) {
+    gpio_put(MEM_WE, !enabled);
+}
+
+void set_mem_read(bool enabled) {
+    gpio_put(MEM_RE, !enabled);
+}

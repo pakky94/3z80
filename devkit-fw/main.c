@@ -5,8 +5,8 @@
 
 #include "io.h"
 
-void write_data();
 void output_shiftregister();
+char read_mem_addr();
 void write_256();
 
 int main() {
@@ -24,12 +24,8 @@ int main() {
         scanf("%c", &command);
 
         switch (command) {
-            case 100:
-            write_data();
-            break;
-
             case 'r':
-                printf("r: '%d'\n", read_data_pins());
+                read_mem_addr();
                 break;
 
             case 's':
@@ -47,24 +43,6 @@ int main() {
     }
 }
 
-void write_data() {
-    char addr_high, addr_low;
-    scanf("%c", &addr_high);
-    scanf("%c", &addr_low);
-    char* data[256];
-    for (int i=0; i<256; i++) {
-        scanf("%c", &data[i]);
-    }
-
-    printf("addr: %c%c\n", addr_high, addr_low);
-    printf("addr: %c%c\n", addr_high, addr_low);
-
-    for (int i=0; i<256; i++) {
-        printf("%c", data[i]);
-    }
-    printf("\n");
-}
-
 void output_shiftregister() {
     uint val;
     scanf("%d", &val);
@@ -72,26 +50,61 @@ void output_shiftregister() {
     printf("s: '%d'\n", val);
 }
 
-void write_256() {
-    char addr_high, addr_low;
+char read_mem_addr() {
+    char bank, addr_high, addr_low;
+    scanf("%c", &bank);
     scanf("%c", &addr_high);
     scanf("%c", &addr_low);
+
+    set_mem_read(false);
+    set_mem_write(false);
+
+    set_shiftreg_value(((uint)bank << 8) || (uint)addr_high);
+    set_shiftreg_output_enabled(true);
+
+    set_data_pins_dir(GPIO_IN);
+    set_addr_pins_dir(GPIO_OUT);
+    write_addr_pins(addr_low);
+
+    set_mem_read(true);
+    char val = read_data_pins();
+
+    set_addr_pins_dir(GPIO_IN);
+    set_shiftreg_output_enabled(false);
+    set_mem_read(false);
+
+    printf("r: '%c'\n", val);
+    return val;
+}
+
+void write_256() {
+    char bank, addr_high;
+    scanf("%c", &bank);
+    scanf("%c", &addr_high);
     char* data[256];
     for (int i=0; i<256; i++) {
         scanf("%c", &data[i]);
     }
 
-    set_data_pins_dir(GPIO_OUt);
-    set_addr_pins_dir(GPIO_OUt);
+    set_mem_read(false);
+    set_mem_write(false);
 
-    set_shiftreg_value(((uint)addr_high << 8) || (uint)addr_low);
+    set_data_pins_dir(GPIO_OUT);
+    set_addr_pins_dir(GPIO_OUT);
+
+    set_shiftreg_value(((uint)bank << 8) || (uint)addr_high);
     set_shiftreg_output_enabled(true);
 
     for (int i=0; i<256; i++) {
         write_addr_pins(i);
-        write_data_pins(data[i]);
-        // TODO: write sequence
+        write_data_pins(*data[i]);
+        set_mem_write(true);
+        set_mem_write(false);
     }
+
+    set_data_pins_dir(GPIO_IN);
+    set_addr_pins_dir(GPIO_IN);
+    set_shiftreg_output_enabled(false);
 
     printf("a\n");
 }
