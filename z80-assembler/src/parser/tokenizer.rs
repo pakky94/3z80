@@ -35,21 +35,15 @@ impl<'a> Tokenizer<'a> {
 
     pub fn expect(&mut self, expected: TokenValue) -> Result<(), ParseError> {
         let actual = self.next()?;
-        if actual.token == expected {
-            Ok(())
-        } else {
-            Err(ParseError::UnexpectedToken(UnexpectedToken {
-                expected,
-                actual: actual.token,
-                line: self.curr_line,
-                file_id: self.file_id,
-                char: 0,
-            }))
-        }
+        self.expect_token(actual, expected)
     }
 
     pub fn expect_peek(&mut self, expected: TokenValue) -> Result<(), ParseError> {
         let actual = self.peek()?;
+        self.expect_token(actual, expected)
+    }
+
+    fn expect_token(&self, actual: Token, expected: TokenValue)  -> Result<(), ParseError> {
         if actual.token == expected {
             Ok(())
         } else {
