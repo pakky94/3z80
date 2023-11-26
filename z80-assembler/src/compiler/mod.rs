@@ -43,10 +43,14 @@ where
         for file in self.source_provider.file_list() {
             self.constants.clear();
             let source = self.source_provider.source(&file.filename);
-            let res = (Parser::new(&source)).parse()?;
+            let mut parser = Parser::new(&source);
 
-            for i in res.items {
-                self.process_item(i)?;
+            loop {
+                if let Some(pi) = parser.parse_next()? {
+                    self.process_item(pi)?;
+                } else {
+                    break;
+                }
             }
         }
 
@@ -530,6 +534,34 @@ RST 0h
                 0xC9,
                 0x00, 0x00,
                 0x01,
+            ],
+            compiler.compile().unwrap(),
+        );
+    }
+
+    #[test]
+    #[rustfmt::skip]
+    fn test_macros_1() {
+        let compiler = Compiler::new(InMemorySourceProvider {
+            files: vec![(
+                SourceHeader { filename: "main.z80".to_string(), },
+                r#"
+#defm macro1 arg1, arg2, arg3, arg4
+
+#endm
+@const1: 18h
+#exec macro1 A, 108h, (IX + 5h), @const1
+RST 30h
+RST 0h
+"#.to_string(),
+            )],
+        }, 1024);
+
+        compare_memory(
+            vec![
+                0b11011111,
+                0b11110111,
+                0b11000111,
             ],
             compiler.compile().unwrap(),
         );

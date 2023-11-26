@@ -18,11 +18,6 @@ pub struct Parser<'a> {
     items: Vec<ParseItem>,
 }
 
-#[derive(Debug)]
-pub struct ParseResult {
-    pub(crate) items: Vec<ParseItem>,
-}
-
 impl<'a> Parser<'a> {
     pub fn new(source: &'a str) -> Self {
         Parser {
@@ -32,7 +27,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse(mut self) -> Result<ParseResult, ParseError> {
+    pub fn parse_next(&mut self) -> Result<Option<ParseItem>, ParseError> {
         loop {
             let t = self.tokenizer.peek()?;
 
@@ -50,10 +45,10 @@ impl<'a> Parser<'a> {
                 Token::EOF => break,
                 _ => unimplemented!("unexpected token {:?} - {:?}", t, self.items),
             };
-            self.items.push(r)
+            return Ok(Some(r))
         }
 
-        Ok(ParseResult { items: self.items })
+        Ok(None)
     }
 
     fn parse_label(&mut self) -> Result<ParseItem, ParseError> {
@@ -238,15 +233,15 @@ mod tests {
 ld A, 10h
 add b, 8h"#,
         );
-        let result = parser.parse().unwrap();
+        let res = parse_all(parser);
 
-        if let ParseItem::Label(label) = result.items.get(0).unwrap() {
+        if let ParseItem::Label(label) = res.get(0).unwrap() {
             assert_eq!(label.name, "label1");
         } else {
             panic!()
         }
 
-        if let ParseItem::Instruction(inst1) = result.items.get(1).unwrap() {
+        if let ParseItem::Instruction(inst1) = res.get(1).unwrap() {
             assert_eq!(inst1.opcode, "ld");
             assert_eq!(inst1.arg0, Argument::ShortReg(ShortReg::A));
             assert_eq!(inst1.arg1, Argument::Value(16));
@@ -254,7 +249,7 @@ add b, 8h"#,
             panic!()
         }
 
-        if let ParseItem::Instruction(inst2) = result.items.get(2).unwrap() {
+        if let ParseItem::Instruction(inst2) = res.get(2).unwrap() {
             assert_eq!(inst2.opcode, "add");
             assert_eq!(inst2.arg0, Argument::ShortReg(ShortReg::B));
             assert_eq!(inst2.arg1, Argument::Value(8));
@@ -266,6 +261,7 @@ add b, 8h"#,
     #[test]
     fn test_parse_address_reg_argument() {
         let parser = Parser::new("ld A, (HL)");
+        let res = parse_all(parser);
         assert_eq!(
             ParseItem::Instruction(Instruction {
                 opcode: "ld".to_string(),
@@ -273,13 +269,14 @@ add b, 8h"#,
                 arg1: Argument::WideRegAddress(WideReg::HL),
                 line: 1,
             }),
-            *parser.parse().unwrap().items.get(0).unwrap()
+            *res.get(0).unwrap()
         );
     }
 
     #[test]
     fn test_parse_address_reg_argument_with_offset() {
         let parser = Parser::new("ld A, (IX + 15h)");
+        let res = parse_all(parser);
         assert_eq!(
             ParseItem::Instruction(Instruction {
                 opcode: "ld".to_string(),
@@ -287,13 +284,14 @@ add b, 8h"#,
                 arg1: Argument::RegOffsetAddress(WideReg::IX, 21),
                 line: 1,
             }),
-            *parser.parse().unwrap().items.get(0).unwrap()
+            *res.get(0).unwrap()
         );
     }
 
     #[test]
     fn test_parse_address() {
         let parser = Parser::new("ld BC, (A2C5h)");
+        let res = parse_all(parser);
         assert_eq!(
             ParseItem::Instruction(Instruction {
                 opcode: "ld".to_string(),
@@ -301,20 +299,20 @@ add b, 8h"#,
                 arg1: Argument::DirectAddress(41669),
                 line: 1,
             }),
-            *parser.parse().unwrap().items.get(0).unwrap()
+            *res.get(0).unwrap()
         );
     }
 
     #[test]
     fn test_parse_label_instr_same_line() {
         let parser = Parser::new(".my_label: ADD A, A9h");
-        let res = parser.parse().unwrap();
+        let res = parse_all(parser);
         assert_eq!(
             ParseItem::Label(Label {
                 name: "my_label".to_string(),
                 line: 1,
             }),
-            *res.items.get(0).unwrap()
+            *res.get(0).unwrap()
         );
         assert_eq!(
             ParseItem::Instruction(Instruction {
@@ -323,7 +321,7 @@ add b, 8h"#,
                 arg1: Argument::Value(169),
                 line: 1,
             }),
-            *res.items.get(1).unwrap()
+            *res.get(1).unwrap()
         );
     }
 
@@ -335,7 +333,7 @@ CALL &label1
 LD BC, *label2
 "#,
         );
-        let res = parser.parse().unwrap();
+        let res = parse_all(parser);
         assert_eq!(
             ParseItem::Instruction(Instruction {
                 opcode: "call".to_string(),
@@ -343,7 +341,7 @@ LD BC, *label2
                 arg1: Argument::None,
                 line: 2,
             }),
-            *res.items.get(0).unwrap()
+            *res.get(0).unwrap()
         );
         assert_eq!(
             ParseItem::Instruction(Instruction {
@@ -352,7 +350,7 @@ LD BC, *label2
                 arg1: Argument::LabelValue("label2".to_string()),
                 line: 3,
             }),
-            *res.items.get(1).unwrap()
+            *res.get(1).unwrap()
         );
     }
 
@@ -366,7 +364,7 @@ JR NZ, a7h
 RET M
 "#,
         );
-        let res = parser.parse().unwrap();
+        let res = parse_all(parser);
         assert_eq!(
             ParseItem::Instruction(Instruction {
                 opcode: "call".to_string(),
@@ -374,7 +372,7 @@ RET M
                 arg1: Argument::LabelValue("label1".to_string()),
                 line: 2,
             }),
-            *res.items.get(0).unwrap()
+            *res.get(0).unwrap()
         );
         assert_eq!(
             ParseItem::Instruction(Instruction {
@@ -383,7 +381,7 @@ RET M
                 arg1: Argument::Value(4660),
                 line: 3,
             }),
-            *res.items.get(1).unwrap()
+            *res.get(1).unwrap()
         );
         assert_eq!(
             ParseItem::Instruction(Instruction {
@@ -392,7 +390,7 @@ RET M
                 arg1: Argument::Value(167),
                 line: 4,
             }),
-            *res.items.get(2).unwrap()
+            *res.get(2).unwrap()
         );
         assert_eq!(
             ParseItem::Instruction(Instruction {
@@ -401,7 +399,7 @@ RET M
                 arg1: Argument::None,
                 line: 5,
             }),
-            *res.items.get(3).unwrap()
+            *res.get(3).unwrap()
         );
     }
 
@@ -412,11 +410,11 @@ RET M
 .data1: 15h
 .data2: aa15h"#,
         );
-        let res = parser.parse().unwrap();
-        assert_eq!(ParseItem::Data(vec![21u8]), *res.items.get(1).unwrap());
+        let res = parse_all(parser);
+        assert_eq!(ParseItem::Data(vec![21u8]), *res.get(1).unwrap());
         assert_eq!(
             ParseItem::Data(vec![21u8, 170u8]),
-            *res.items.get(3).unwrap()
+            *res.get(3).unwrap()
         );
     }
 
@@ -427,13 +425,13 @@ RET M
 @const1: 15h
 add a, @const1"#,
         );
-        let res = parser.parse().unwrap();
+        let res = parse_all(parser);
         assert_eq!(
             ParseItem::Constant(Constant {
                 name: "const1".to_string(),
                 value: 21,
             }),
-            *res.items.get(0).unwrap()
+            *res.get(0).unwrap()
         );
         assert_eq!(
             ParseItem::Instruction(Instruction {
@@ -442,7 +440,7 @@ add a, @const1"#,
                 arg1: Argument::Constant("const1".to_string()),
                 line: 3,
             }),
-            *res.items.get(1).unwrap()
+            *res.get(1).unwrap()
         );
     }
 
@@ -454,14 +452,26 @@ add a, @const1"#,
 #test dir 123
 "#,
         );
-        let res = parser.parse().unwrap();
+        let res = parse_all(parser);
         assert_eq!(
             ParseItem::Directive(r#"#include "test.z80""#.to_string()),
-            *res.items.get(0).unwrap()
+            *res.get(0).unwrap()
         );
         assert_eq!(
             ParseItem::Directive(r#"#test dir 123"#.to_string()),
-            *res.items.get(1).unwrap()
+            *res.get(1).unwrap()
         );
+    }
+
+    fn parse_all(mut parser: Parser) -> Vec<ParseItem> {
+        let mut res = vec![];
+        loop {
+            if let Some(pi) = parser.parse_next().unwrap() {
+                res.push(pi);
+            } else {
+                break;
+            }
+        }
+        res
     }
 }
