@@ -7,6 +7,7 @@ use crate::compiler::utilities::relative_delta;
 use crate::domain::{Argument, Instruction, ParseItem};
 use crate::parser::Parser;
 use std::collections::HashMap;
+use crate::parser::tokenizer::Tokenizer;
 
 mod instructions;
 mod source_provider;
@@ -43,10 +44,11 @@ where
         for file in self.source_provider.file_list() {
             self.constants.clear();
             let source = self.source_provider.source(&file.filename);
-            let mut parser = Parser::new(&source);
+            let mut tokenizer = Tokenizer::new(&source, 0);
+            let mut parser = Parser::new();
 
             loop {
-                if let Some(pi) = parser.parse_next()? {
+                if let Some(pi) = parser.parse_next(&mut tokenizer)? {
                     self.process_item(pi)?;
                 } else {
                     break;
