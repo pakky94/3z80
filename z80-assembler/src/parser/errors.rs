@@ -12,5 +12,6 @@ pub struct UnexpectedToken {
     pub expected: TokenValue,
     pub actual: TokenValue,
     pub line: usize,
+    pub file_id: usize,
     pub char: usize,
 }

@@ -4,7 +4,7 @@ use crate::domain::register::{parse_register, ParsedRegister};
 use crate::domain::*;
 pub use crate::parser::errors::ParseError;
 use crate::parser::errors::UnexpectedToken;
-use crate::parser::token::TokenValue;
+use crate::parser::token::{Token, TokenValue};
 use crate::parser::tokenizer::Tokenizer;
 
 mod errors;
@@ -14,7 +14,6 @@ mod tokenizer;
 #[derive(Debug)]
 pub struct Parser<'a> {
     tokenizer: Tokenizer<'a>,
-    line: usize,
     items: Vec<ParseItem>,
 }
 
@@ -23,7 +22,6 @@ impl<'a> Parser<'a> {
         Parser {
             tokenizer: Tokenizer::new(source, 0),
             items: Vec::new(),
-            line: 1,
         }
     }
 
@@ -37,7 +35,6 @@ impl<'a> Parser<'a> {
                 TokenValue::Value(_, _) => self.parse_data()?,
                 TokenValue::NewLine => {
                     self.tokenizer.next()?;
-                    self.line += 1;
                     continue;
                 }
                 TokenValue::At => self.parse_constant()?,
@@ -53,11 +50,17 @@ impl<'a> Parser<'a> {
 
     fn parse_label(&mut self) -> Result<ParseItem, ParseError> {
         self.tokenizer.next()?;
-        if let TokenValue::Identifier(l) = self.tokenizer.next()?.token {
+        if let Token {
+            token: TokenValue::Identifier(l),
+            line,
+            file_id,
+        } = self.tokenizer.next()?
+        {
             self.tokenizer.expect(TokenValue::Colon)?;
             Ok(ParseItem::Label(Label {
                 name: l.to_string(),
-                line: self.line,
+                line,
+                file_id,
             }))
         } else {
             unimplemented!("expected identifier token")
@@ -65,44 +68,50 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_instruction(&mut self) -> Result<ParseItem, ParseError> {
-        let code = if let TokenValue::Identifier(s) = self.tokenizer.next()?.token {
-            s
+        if let Token {
+            token: TokenValue::Identifier(code),
+            line,
+            file_id,
+        } = self.tokenizer.next()?
+        {
+            let mut inst = Instruction {
+                opcode: code.to_lowercase(),
+                arg0: Argument::None,
+                arg1: Argument::None,
+                line,
+                file_id,
+            };
+
+            if let TokenValue::NewLine = self.tokenizer.peek()?.token {
+                return Ok(ParseItem::Instruction(inst));
+            }
+
+            inst.arg0 = self.parse_argument(&inst.opcode)?;
+
+            if self.tokenizer.peek()?.token != TokenValue::Comma {
+                self.tokenizer.expect_peek(TokenValue::NewLine)?;
+                return Ok(ParseItem::Instruction(inst));
+            }
+
+            self.tokenizer.next()?; // Token::Comma
+
+            inst.arg1 = self.parse_argument(&inst.opcode)?;
+
+            let t = self.tokenizer.peek()?;
+            if t.token != TokenValue::NewLine && t.token != TokenValue::EOF {
+                return Err(ParseError::UnexpectedToken(UnexpectedToken {
+                    expected: TokenValue::NewLine,
+                    actual: t.token,
+                    line: t.line,
+                    file_id: t.file_id,
+                    char: 0,
+                }));
+            }
+
+            Ok(ParseItem::Instruction(inst))
         } else {
             panic!()
-        };
-        let mut inst = Instruction {
-            opcode: code.to_lowercase(),
-            arg0: Argument::None,
-            arg1: Argument::None,
-            line: self.line,
-        };
-
-        if let TokenValue::NewLine = self.tokenizer.peek()?.token {
-            return Ok(ParseItem::Instruction(inst));
         }
-
-        inst.arg0 = self.parse_argument(&inst.opcode)?;
-
-        if self.tokenizer.peek()?.token != TokenValue::Comma {
-            self.tokenizer.expect_peek(TokenValue::NewLine)?;
-            return Ok(ParseItem::Instruction(inst));
-        }
-
-        self.tokenizer.next()?; // Token::Comma
-
-        inst.arg1 = self.parse_argument(&inst.opcode)?;
-
-        let t = self.tokenizer.peek()?;
-        if t.token != TokenValue::NewLine && t.token != TokenValue::EOF {
-            return Err(ParseError::UnexpectedToken(UnexpectedToken {
-                expected: TokenValue::NewLine,
-                actual: t.token,
-                line: self.line,
-                char: 0,
-            }));
-        }
-
-        Ok(ParseItem::Instruction(inst))
     }
 
     fn parse_argument(&mut self, code: &str) -> Result<Argument, ParseError> {
@@ -268,6 +277,7 @@ add b, 8h"#,
                 arg0: Argument::ShortReg(ShortReg::A),
                 arg1: Argument::WideRegAddress(WideReg::HL),
                 line: 1,
+                file_id: 0,
             }),
             *res.get(0).unwrap()
         );
@@ -283,6 +293,7 @@ add b, 8h"#,
                 arg0: Argument::ShortReg(ShortReg::A),
                 arg1: Argument::RegOffsetAddress(WideReg::IX, 21),
                 line: 1,
+                file_id: 0,
             }),
             *res.get(0).unwrap()
         );
@@ -298,6 +309,7 @@ add b, 8h"#,
                 arg0: Argument::WideReg(WideReg::BC),
                 arg1: Argument::DirectAddress(41669),
                 line: 1,
+                file_id: 0,
             }),
             *res.get(0).unwrap()
         );
@@ -311,6 +323,7 @@ add b, 8h"#,
             ParseItem::Label(Label {
                 name: "my_label".to_string(),
                 line: 1,
+                file_id: 0,
             }),
             *res.get(0).unwrap()
         );
@@ -320,6 +333,7 @@ add b, 8h"#,
                 arg0: Argument::ShortReg(ShortReg::A),
                 arg1: Argument::Value(169),
                 line: 1,
+                file_id: 0,
             }),
             *res.get(1).unwrap()
         );
@@ -340,6 +354,7 @@ LD BC, *label2
                 arg0: Argument::LabelAddress("label1".to_string()),
                 arg1: Argument::None,
                 line: 2,
+                file_id: 0,
             }),
             *res.get(0).unwrap()
         );
@@ -349,6 +364,7 @@ LD BC, *label2
                 arg0: Argument::WideReg(WideReg::BC),
                 arg1: Argument::LabelValue("label2".to_string()),
                 line: 3,
+                file_id: 0,
             }),
             *res.get(1).unwrap()
         );
@@ -371,6 +387,7 @@ RET M
                 arg0: Argument::Condition(Condition::C),
                 arg1: Argument::LabelValue("label1".to_string()),
                 line: 2,
+                file_id: 0,
             }),
             *res.get(0).unwrap()
         );
@@ -380,6 +397,7 @@ RET M
                 arg0: Argument::Condition(Condition::PO),
                 arg1: Argument::Value(4660),
                 line: 3,
+                file_id: 0,
             }),
             *res.get(1).unwrap()
         );
@@ -389,6 +407,7 @@ RET M
                 arg0: Argument::Condition(Condition::NZ),
                 arg1: Argument::Value(167),
                 line: 4,
+                file_id: 0,
             }),
             *res.get(2).unwrap()
         );
@@ -398,6 +417,7 @@ RET M
                 arg0: Argument::Condition(Condition::M),
                 arg1: Argument::None,
                 line: 5,
+                file_id: 0,
             }),
             *res.get(3).unwrap()
         );
@@ -436,6 +456,7 @@ add a, @const1"#,
                 arg0: Argument::ShortReg(ShortReg::A),
                 arg1: Argument::Constant("const1".to_string()),
                 line: 3,
+                file_id: 0,
             }),
             *res.get(1).unwrap()
         );

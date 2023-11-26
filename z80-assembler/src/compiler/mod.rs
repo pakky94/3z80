@@ -125,6 +125,7 @@ where
             arg0: arg0.unwrap_or(inst.arg0),
             arg1: arg1.unwrap_or(inst.arg1),
             line: inst.line,
+            file_id: inst.file_id,
         })
     }
 
@@ -154,6 +155,7 @@ where
                 arg0: arg0.unwrap_or(inst.arg0),
                 arg1: arg1.unwrap_or(inst.arg1),
                 line: inst.line,
+                file_id: inst.file_id,
             },
             p0,
             p1,

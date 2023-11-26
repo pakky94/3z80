@@ -42,6 +42,7 @@ impl<'a> Tokenizer<'a> {
                 expected,
                 actual: actual.token,
                 line: self.curr_line,
+                file_id: self.file_id,
                 char: 0,
             }))
         }
@@ -56,6 +57,7 @@ impl<'a> Tokenizer<'a> {
                 expected,
                 actual: actual.token,
                 line: self.curr_line,
+                file_id: self.file_id,
                 char: 0,
             }))
         }
@@ -128,8 +130,9 @@ impl<'a> Tokenizer<'a> {
                         }
                         _ => {
                             let end = (*p).clone();
-                            return Ok(self
-                                .create_token(parse_identifier_or_value(&self.source[start..end])));
+                            return Ok(self.create_token(parse_identifier_or_value(
+                                &self.source[start..end],
+                            )));
                         }
                     }
                 } else {
@@ -219,7 +222,7 @@ fn parse_identifier_or_value(s: &str) -> TokenValue {
 #[cfg(test)]
 mod tests {
     use crate::parser::token::TokenValue;
-    use crate::parser::tokenizer::{Token, Tokenizer};
+    use crate::parser::tokenizer::Tokenizer;
 
     #[test]
     fn test1() {

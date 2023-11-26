@@ -19,6 +19,7 @@ pub struct Instruction {
     pub arg0: Argument,
     pub arg1: Argument,
     pub line: usize,
+    pub file_id: usize,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -41,6 +42,7 @@ pub enum Argument {
 pub struct Label {
     pub name: String,
     pub line: usize,
+    pub file_id: usize,
 }
 
 #[derive(Debug, Eq, PartialEq)]
