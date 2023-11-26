@@ -4,7 +4,7 @@ use crate::domain::register::{parse_register, ParsedRegister};
 use crate::domain::*;
 pub use crate::parser::errors::ParseError;
 use crate::parser::errors::UnexpectedToken;
-use crate::parser::token::Token;
+use crate::parser::token::{TokenValue};
 use crate::parser::tokenizer::Tokenizer;
 
 mod errors;
@@ -21,7 +21,7 @@ pub struct Parser<'a> {
 impl<'a> Parser<'a> {
     pub fn new(source: &'a str) -> Self {
         Parser {
-            tokenizer: Tokenizer::new(source),
+            tokenizer: Tokenizer::new(source, 0),
             items: Vec::new(),
             line: 1,
         }
@@ -31,18 +31,18 @@ impl<'a> Parser<'a> {
         loop {
             let t = self.tokenizer.peek()?;
 
-            let r = match t {
-                Token::Dot => self.parse_label()?,
-                Token::Identifier(_) => self.parse_instruction()?,
-                Token::Value(_, _) => self.parse_data()?,
-                Token::NewLine => {
+            let r = match t.token {
+                TokenValue::Dot => self.parse_label()?,
+                TokenValue::Identifier(_) => self.parse_instruction()?,
+                TokenValue::Value(_, _) => self.parse_data()?,
+                TokenValue::NewLine => {
                     self.tokenizer.next()?;
                     self.line += 1;
                     continue;
                 }
-                Token::At => self.parse_constant()?,
-                Token::Directive(_) => self.parse_directive()?,
-                Token::EOF => break,
+                TokenValue::At => self.parse_constant()?,
+                TokenValue::Directive(_) => self.parse_directive()?,
+                TokenValue::EOF => break,
                 _ => unimplemented!("unexpected token {:?} - {:?}", t, self.items),
             };
             return Ok(Some(r))
@@ -53,8 +53,8 @@ impl<'a> Parser<'a> {
 
     fn parse_label(&mut self) -> Result<ParseItem, ParseError> {
         self.tokenizer.next()?;
-        if let Ok(Token::Identifier(l)) = self.tokenizer.next() {
-            self.tokenizer.expect(Token::Colon)?;
+        if let TokenValue::Identifier(l) = self.tokenizer.next()?.token {
+            self.tokenizer.expect(TokenValue::Colon)?;
             Ok(ParseItem::Label(Label {
                 name: l.to_string(),
                 line: self.line,
@@ -65,7 +65,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_instruction(&mut self) -> Result<ParseItem, ParseError> {
-        let code = if let Ok(Token::Identifier(s)) = self.tokenizer.next() {
+        let code = if let TokenValue::Identifier(s) = self.tokenizer.next()?.token {
             s
         } else {
             panic!()
@@ -77,14 +77,14 @@ impl<'a> Parser<'a> {
             line: self.line,
         };
 
-        if let Ok(Token::NewLine) = self.tokenizer.peek() {
+        if let TokenValue::NewLine = self.tokenizer.peek()?.token {
             return Ok(ParseItem::Instruction(inst));
         }
 
         inst.arg0 = self.parse_argument(&inst.opcode)?;
 
-        if self.tokenizer.peek()? != Token::Comma {
-            self.tokenizer.expect_peek(Token::NewLine)?;
+        if self.tokenizer.peek()?.token != TokenValue::Comma {
+            self.tokenizer.expect_peek(TokenValue::NewLine)?;
             return Ok(ParseItem::Instruction(inst));
         }
 
@@ -93,10 +93,10 @@ impl<'a> Parser<'a> {
         inst.arg1 = self.parse_argument(&inst.opcode)?;
 
         let t = self.tokenizer.peek()?;
-        if t != Token::NewLine && t != Token::EOF {
+        if t.token != TokenValue::NewLine && t.token != TokenValue::EOF {
             return Err(ParseError::UnexpectedToken(UnexpectedToken {
-                expected: Token::NewLine,
-                actual: t,
+                expected: TokenValue::NewLine,
+                actual: t.token,
                 line: self.line,
                 char: 0,
             }));
@@ -106,10 +106,10 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_argument(&mut self, code: &str) -> Result<Argument, ParseError> {
-        match self.tokenizer.next()? {
-            Token::Value(v, _) => Ok(Argument::Value(v)), // TODO: pass length?
-            Token::OpenParen => self.parse_address_arg(),
-            Token::Identifier(i) => {
+        match self.tokenizer.next()?.token {
+            TokenValue::Value(v, _) => Ok(Argument::Value(v)), // TODO: pass length?
+            TokenValue::OpenParen => self.parse_address_arg(),
+            TokenValue::Identifier(i) => {
                 if condition_allowed(code) {
                     if let Some(c) = parse_condition(&i) {
                         return Ok(Argument::Condition(c));
@@ -121,22 +121,22 @@ impl<'a> Parser<'a> {
                     _ => unimplemented!(),
                 })
             }
-            Token::Amp => {
-                if let Token::Identifier(i) = self.tokenizer.next()? {
+            TokenValue::Amp => {
+                if let TokenValue::Identifier(i) = self.tokenizer.next()?.token {
                     Ok(Argument::LabelAddress(i))
                 } else {
                     unimplemented!("expected identifier")
                 }
             }
-            Token::Asterisk => {
-                if let Token::Identifier(i) = self.tokenizer.next()? {
+            TokenValue::Asterisk => {
+                if let TokenValue::Identifier(i) = self.tokenizer.next()?.token {
                     Ok(Argument::LabelValue(i))
                 } else {
                     unimplemented!("expected identifier")
                 }
             }
-            Token::At => {
-                if let Token::Identifier(i) = self.tokenizer.next()? {
+            TokenValue::At => {
+                if let TokenValue::Identifier(i) = self.tokenizer.next()?.token {
                     Ok(Argument::Constant(i))
                 } else {
                     unimplemented!("expected identifier")
@@ -147,14 +147,14 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_address_arg(&mut self) -> Result<Argument, ParseError> {
-        match self.tokenizer.next()? {
-            Token::Identifier(i) => {
-                if let Token::Plus = self.tokenizer.peek()? {
+        match self.tokenizer.next()?.token {
+            TokenValue::Identifier(i) => {
+                if let TokenValue::Plus = self.tokenizer.peek()?.token {
                     self.tokenizer.next()?;
-                    if let Token::Value(offset, _) = self.tokenizer.next()? {
+                    if let TokenValue::Value(offset, _) = self.tokenizer.next()?.token {
                         // TODO: validate length here???
                         if let ParsedRegister::WideReg(wr) = parse_register(&i) {
-                            self.tokenizer.expect(Token::CloseParen)?;
+                            self.tokenizer.expect(TokenValue::CloseParen)?;
                             Ok(Argument::RegOffsetAddress(wr, offset))
                         } else {
                             unimplemented!()
@@ -164,7 +164,7 @@ impl<'a> Parser<'a> {
                     }
                 } else {
                     if let ParsedRegister::WideReg(wr) = parse_register(&i) {
-                        self.tokenizer.expect(Token::CloseParen)?;
+                        self.tokenizer.expect(TokenValue::CloseParen)?;
                         if wr == WideReg::IX || wr == WideReg::IY {
                             Ok(Argument::RegOffsetAddress(wr, 0))
                         } else {
@@ -175,8 +175,8 @@ impl<'a> Parser<'a> {
                     }
                 }
             }
-            Token::Value(val, _) => {
-                self.tokenizer.expect(Token::CloseParen)?;
+            TokenValue::Value(val, _) => {
+                self.tokenizer.expect(TokenValue::CloseParen)?;
                 Ok(Argument::DirectAddress(val))
             }
             t => unimplemented!("unhandled token {:?}", t),
@@ -184,7 +184,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_data(&mut self) -> Result<ParseItem, ParseError> {
-        if let Token::Value(val, size) = self.tokenizer.next()? {
+        if let TokenValue::Value(val, size) = self.tokenizer.next()?.token {
             Ok(match size {
                 1 => ParseItem::Data(vec![val as u8]),
                 2 => ParseItem::Data(vec![(val % 256) as u8, (val / 256) as u8]),
@@ -196,9 +196,9 @@ impl<'a> Parser<'a> {
     }
     fn parse_constant(&mut self) -> Result<ParseItem, ParseError> {
         self.tokenizer.next()?;
-        if let Ok(Token::Identifier(l)) = self.tokenizer.next() {
-            self.tokenizer.expect(Token::Colon)?;
-            if let Token::Value(val, _) = self.tokenizer.next()? {
+        if let TokenValue::Identifier(l) = self.tokenizer.next()?.token {
+            self.tokenizer.expect(TokenValue::Colon)?;
+            if let TokenValue::Value(val, _) = self.tokenizer.next()?.token {
                 Ok(ParseItem::Constant(Constant {
                     name: l,
                     value: val,
@@ -211,7 +211,7 @@ impl<'a> Parser<'a> {
         }
     }
     fn parse_directive(&mut self) -> Result<ParseItem, ParseError> {
-        if let Token::Directive(s) = self.tokenizer.next()? {
+        if let TokenValue::Directive(s) = self.tokenizer.next()?.token {
             Ok(ParseItem::Directive(s))
         } else {
             unreachable!()

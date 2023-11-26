@@ -1,5 +1,12 @@
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum Token {
+pub struct Token {
+    pub token: TokenValue,
+    pub line: usize,
+    pub file_id: usize,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum TokenValue {
     Identifier(String),
     OpenParen,
     CloseParen,

@@ -1,4 +1,4 @@
-use crate::parser::token::Token;
+use crate::parser::token::{TokenValue};
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum ParseError {
@@ -9,8 +9,8 @@ pub enum ParseError {
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct UnexpectedToken {
-    pub expected: Token,
-    pub actual: Token,
+    pub expected: TokenValue,
+    pub actual: TokenValue,
     pub line: usize,
     pub char: usize,
 }
