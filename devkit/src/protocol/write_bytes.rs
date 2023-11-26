@@ -4,7 +4,7 @@ use std::error::Error;
 use std::io::{Read, Write};
 
 pub fn write_bytes_to_addr(
-    mut serial_port: &mut Box<dyn SerialPort>,
+    serial_port: &mut Box<dyn SerialPort>,
     addr_high: u16,
     data: &[u8],
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {

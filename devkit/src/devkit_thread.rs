@@ -1,15 +1,21 @@
 use crate::protocol::write_bytes_to_addr;
 use serialport::SerialPort;
 use std::error::Error;
-use std::sync::mpsc::{Receiver, TryRecvError};
+use std::sync::mpsc::{Receiver, Sender, TryRecvError};
 use std::thread;
 use std::time::Duration;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum DevkitCommand {
     ConnectSerial(String, u32),
     WriteBytes(u16, Vec<u8>),
     End,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum DevkitResponse {
+    Done,
+    SomethingBroke,
 }
 
 struct State {
@@ -18,6 +24,7 @@ struct State {
 
 pub fn devkit_thread(
     rx: Receiver<DevkitCommand>,
+    res: Sender<DevkitResponse>,
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
     let mut state = State { serial_port: None };
 
@@ -33,7 +40,10 @@ pub fn devkit_thread(
             }
             Ok(DevkitCommand::WriteBytes(addr, data)) => {
                 match &mut state.serial_port {
-                    Some(port) => write_bytes_to_addr(port, addr, data.as_slice())?,
+                    Some(port) => {
+                        write_bytes_to_addr(port, addr, data.as_slice())?;
+                        res.send(DevkitResponse::Done)?;
+                    }
                     None => {}
                 }
                 ()
