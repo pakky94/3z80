@@ -4,7 +4,7 @@ use crate::domain::register::{parse_register, ParsedRegister};
 use crate::domain::*;
 pub use crate::parser::errors::ParseError;
 use crate::parser::errors::UnexpectedToken;
-use crate::parser::token::{Token, TokenValue};
+pub use crate::parser::token::{Token, TokenValue};
 use crate::parser::tokenizer::Tokenizer;
 
 mod errors;
@@ -12,16 +12,17 @@ mod token;
 pub mod tokenizer;
 
 #[derive(Debug)]
-pub struct Parser {
-}
+pub struct Parser {}
 
 impl Parser {
     pub fn new() -> Self {
-        Parser {
-        }
+        Parser {}
     }
 
-    pub fn parse_next(&mut self, tokenizer: &mut Tokenizer) -> Result<Option<ParseItem>, ParseError> {
+    pub fn parse_next(
+        &mut self,
+        tokenizer: &mut impl Tokenizer,
+    ) -> Result<Option<ParseItem>, ParseError> {
         loop {
             let t = tokenizer.peek()?;
 
@@ -44,7 +45,7 @@ impl Parser {
         Ok(None)
     }
 
-    fn parse_label(&mut self, tokenizer: &mut Tokenizer) -> Result<ParseItem, ParseError> {
+    fn parse_label(&mut self, tokenizer: &mut impl Tokenizer) -> Result<ParseItem, ParseError> {
         tokenizer.next()?;
         if let Token {
             token: TokenValue::Identifier(l),
@@ -63,7 +64,10 @@ impl Parser {
         }
     }
 
-    fn parse_instruction(&mut self, tokenizer: &mut Tokenizer) -> Result<ParseItem, ParseError> {
+    fn parse_instruction(
+        &mut self,
+        tokenizer: &mut impl Tokenizer,
+    ) -> Result<ParseItem, ParseError> {
         if let Token {
             token: TokenValue::Identifier(code),
             line,
@@ -110,7 +114,11 @@ impl Parser {
         }
     }
 
-    fn parse_argument(&mut self, tokenizer: &mut Tokenizer, code: &str) -> Result<Argument, ParseError> {
+    fn parse_argument(
+        &mut self,
+        tokenizer: &mut impl Tokenizer,
+        code: &str,
+    ) -> Result<Argument, ParseError> {
         match tokenizer.next()?.token {
             TokenValue::Value(v, _) => Ok(Argument::Value(v)), // TODO: pass length?
             TokenValue::OpenParen => self.parse_address_arg(tokenizer),
@@ -151,7 +159,10 @@ impl Parser {
         }
     }
 
-    fn parse_address_arg(&mut self, tokenizer: &mut Tokenizer) -> Result<Argument, ParseError> {
+    fn parse_address_arg(
+        &mut self,
+        tokenizer: &mut impl Tokenizer,
+    ) -> Result<Argument, ParseError> {
         match tokenizer.next()?.token {
             TokenValue::Identifier(i) => {
                 if let TokenValue::Plus = tokenizer.peek()?.token {
@@ -188,7 +199,7 @@ impl Parser {
         }
     }
 
-    fn parse_data(&mut self, tokenizer: &mut Tokenizer) -> Result<ParseItem, ParseError> {
+    fn parse_data(&mut self, tokenizer: &mut impl Tokenizer) -> Result<ParseItem, ParseError> {
         if let TokenValue::Value(val, size) = tokenizer.next()?.token {
             Ok(match size {
                 1 => ParseItem::Data(vec![val as u8]),
@@ -199,7 +210,7 @@ impl Parser {
             unreachable!()
         }
     }
-    fn parse_constant(&mut self, tokenizer: &mut Tokenizer) -> Result<ParseItem, ParseError> {
+    fn parse_constant(&mut self, tokenizer: &mut impl Tokenizer) -> Result<ParseItem, ParseError> {
         tokenizer.next()?;
         if let TokenValue::Identifier(l) = tokenizer.next()?.token {
             tokenizer.expect(TokenValue::Colon)?;
@@ -215,7 +226,7 @@ impl Parser {
             unimplemented!("expected identifier token")
         }
     }
-    fn parse_directive(&mut self, tokenizer: &mut Tokenizer) -> Result<ParseItem, ParseError> {
+    fn parse_directive(&mut self, tokenizer: &mut impl Tokenizer) -> Result<ParseItem, ParseError> {
         if let TokenValue::Directive(s) = tokenizer.next()?.token {
             Ok(ParseItem::Directive(s))
         } else {
@@ -228,8 +239,8 @@ impl Parser {
 mod tests {
     use crate::domain::enums::{Condition, ShortReg, WideReg};
     use crate::domain::{Constant, Label};
+    use crate::parser::tokenizer::SimpleTokenizer;
     use crate::parser::{Argument, Instruction, ParseItem, Parser};
-    use crate::parser::tokenizer::Tokenizer;
 
     #[test]
     fn test_parse1() {
@@ -237,7 +248,7 @@ mod tests {
             r#"
 .label1:
 ld A, 10h
-add b, 8h"#
+add b, 8h"#,
         );
 
         if let ParseItem::Label(label) = res.get(0).unwrap() {
@@ -469,7 +480,7 @@ add a, @const1"#,
     }
 
     fn parse_all(text: &str) -> Vec<ParseItem> {
-        let mut tokenizer = Tokenizer::new(text, 0);
+        let mut tokenizer = SimpleTokenizer::new(text, 0);
         let mut res = vec![];
         let mut parser = Parser::new();
         loop {

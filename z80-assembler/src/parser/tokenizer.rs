@@ -1,10 +1,18 @@
+use std::collections::VecDeque;
 use crate::parser::errors::{ParseError, UnexpectedToken};
 use crate::parser::token::{Token, TokenValue};
 use std::iter::Peekable;
 use std::str::CharIndices;
 
+pub trait Tokenizer {
+    fn peek(&mut self) -> Result<Token, ParseError>;
+    fn expect(&mut self, expected: TokenValue) -> Result<(), ParseError>;
+    fn expect_peek(&mut self, expected: TokenValue) -> Result<(), ParseError>;
+    fn next(&mut self) -> Result<Token, ParseError>;
+}
+
 #[derive(Debug)]
-pub struct Tokenizer<'a> {
+pub struct SimpleTokenizer<'a> {
     source: &'a str,
     file_id: usize,
     chars: Peekable<CharIndices<'a>>,
@@ -12,9 +20,78 @@ pub struct Tokenizer<'a> {
     head: Option<Token>,
 }
 
-impl<'a> Tokenizer<'a> {
+#[derive(Debug)]
+pub struct BufferedTokenizer<'a> {
+    tokenizer: SimpleTokenizer<'a>,
+    buffer: VecDeque<Token>,
+}
+
+impl<'a> BufferedTokenizer<'a> {
     pub fn new(source: &'a str, file_id: usize) -> Self {
-        Tokenizer {
+        BufferedTokenizer {
+            tokenizer: SimpleTokenizer {
+                source,
+                file_id,
+                chars: source.char_indices().peekable(),
+                curr_line: 1,
+                head: None,
+            },
+            buffer: VecDeque::new()
+        }
+    }
+
+    fn expect_token(&self, actual: Token, expected: TokenValue) -> Result<(), ParseError> {
+        if actual.token == expected {
+            Ok(())
+        } else {
+            Err(ParseError::UnexpectedToken(UnexpectedToken {
+                expected,
+                actual: actual.token,
+                line: self.tokenizer.curr_line,
+                file_id: self.tokenizer.file_id,
+                char: 0,
+            }))
+        }
+    }
+}
+
+impl<'a> Tokenizer for BufferedTokenizer<'a> {
+    fn peek(&mut self) -> Result<Token, ParseError> {
+        if let Some(t) = self.buffer.front() {
+            Ok(t.clone())
+        } else {
+            self.tokenizer.peek()
+        }
+    }
+
+    fn expect(&mut self, expected: TokenValue) -> Result<(), ParseError> {
+        if let Some(t) = self.buffer.pop_front() {
+            self.expect_token(t, expected)
+        } else {
+            self.tokenizer.expect(expected)
+        }
+    }
+
+    fn expect_peek(&mut self, expected: TokenValue) -> Result<(), ParseError> {
+        if let Some(t) = self.buffer.front() {
+            self.expect_token(t.clone(), expected)
+        } else {
+            self.tokenizer.expect_peek(expected)
+        }
+    }
+
+    fn next(&mut self) -> Result<Token, ParseError> {
+        if let Some(t) = self.buffer.pop_front() {
+            Ok(t.clone())
+        } else {
+            self.tokenizer.next()
+        }
+    }
+}
+
+impl<'a> SimpleTokenizer<'a> {
+    pub fn new(source: &'a str, file_id: usize) -> Self {
+        SimpleTokenizer {
             source,
             file_id,
             chars: source.char_indices().peekable(),
@@ -23,27 +100,7 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
-    pub fn peek(&mut self) -> Result<Token, ParseError> {
-        if let Some(t) = &self.head {
-            return Ok((*t).clone());
-        } else {
-            let t = self.next()?;
-            self.head = Some(t.clone());
-            Ok(t)
-        }
-    }
-
-    pub fn expect(&mut self, expected: TokenValue) -> Result<(), ParseError> {
-        let actual = self.next()?;
-        self.expect_token(actual, expected)
-    }
-
-    pub fn expect_peek(&mut self, expected: TokenValue) -> Result<(), ParseError> {
-        let actual = self.peek()?;
-        self.expect_token(actual, expected)
-    }
-
-    fn expect_token(&self, actual: Token, expected: TokenValue)  -> Result<(), ParseError> {
+    fn expect_token(&self, actual: Token, expected: TokenValue) -> Result<(), ParseError> {
         if actual.token == expected {
             Ok(())
         } else {
@@ -54,60 +111,6 @@ impl<'a> Tokenizer<'a> {
                 file_id: self.file_id,
                 char: 0,
             }))
-        }
-    }
-
-    pub fn next(&mut self) -> Result<Token, ParseError> {
-        if let Some(t) = &self.head {
-            let temp = (*t).clone();
-            self.head = None;
-            return Ok(temp);
-        }
-
-        loop {
-            if let Some((_, c)) = self.chars.peek() {
-                if *c == '\n' {
-                    self.curr_line += 1;
-                    self.chars.next();
-                    return Ok(self.create_token(TokenValue::NewLine));
-                }
-
-                if *c == ';' {
-                    // comment
-                    loop {
-                        match self.chars.peek() {
-                            Some((_, '\n')) => {
-                                self.curr_line += 1;
-                                self.chars.next();
-                                return Ok(self.create_token(TokenValue::NewLine));
-                            }
-                            Some(_) => {
-                                self.chars.next();
-                            }
-                            None => return Ok(self.create_token(TokenValue::EOF)),
-                        }
-                    }
-                }
-
-                if !c.is_whitespace() {
-                    break;
-                }
-
-                self.chars.next();
-            } else {
-                return Ok(self.create_token(TokenValue::EOF));
-            }
-        }
-
-        if let Some((_, c)) = self.chars.peek() {
-            match c {
-                '#' => self.parse_directive(),
-                ',' | '(' | ')' | '+' | '.' | ':' | '&' | '*' | '@' => self.parse_single_char(),
-                'a'..='z' | 'A'..='Z' | '0'..='9' => self.parse_identifier(),
-                _ => Err(ParseError::UnexpectedChar(c.clone(), self.curr_line)),
-            }
-        } else {
-            Ok(self.create_token(TokenValue::EOF))
         }
     }
 
@@ -192,6 +195,82 @@ impl<'a> Tokenizer<'a> {
     }
 }
 
+impl<'a> Tokenizer for SimpleTokenizer<'a> {
+    fn peek(&mut self) -> Result<Token, ParseError> {
+        if let Some(t) = &self.head {
+            return Ok((*t).clone());
+        } else {
+            let t = self.next()?;
+            self.head = Some(t.clone());
+            Ok(t)
+        }
+    }
+
+    fn expect(&mut self, expected: TokenValue) -> Result<(), ParseError> {
+        let actual = self.next()?;
+        self.expect_token(actual, expected)
+    }
+
+    fn expect_peek(&mut self, expected: TokenValue) -> Result<(), ParseError> {
+        let actual = self.peek()?;
+        self.expect_token(actual, expected)
+    }
+
+    fn next(&mut self) -> Result<Token, ParseError> {
+        if let Some(t) = &self.head {
+            let temp = (*t).clone();
+            self.head = None;
+            return Ok(temp);
+        }
+
+        loop {
+            if let Some((_, c)) = self.chars.peek() {
+                if *c == '\n' {
+                    self.curr_line += 1;
+                    self.chars.next();
+                    return Ok(self.create_token(TokenValue::NewLine));
+                }
+
+                if *c == ';' {
+                    // comment
+                    loop {
+                        match self.chars.peek() {
+                            Some((_, '\n')) => {
+                                self.curr_line += 1;
+                                self.chars.next();
+                                return Ok(self.create_token(TokenValue::NewLine));
+                            }
+                            Some(_) => {
+                                self.chars.next();
+                            }
+                            None => return Ok(self.create_token(TokenValue::EOF)),
+                        }
+                    }
+                }
+
+                if !c.is_whitespace() {
+                    break;
+                }
+
+                self.chars.next();
+            } else {
+                return Ok(self.create_token(TokenValue::EOF));
+            }
+        }
+
+        if let Some((_, c)) = self.chars.peek() {
+            match c {
+                '#' => self.parse_directive(),
+                ',' | '(' | ')' | '+' | '.' | ':' | '&' | '*' | '@' => self.parse_single_char(),
+                'a'..='z' | 'A'..='Z' | '0'..='9' => self.parse_identifier(),
+                _ => Err(ParseError::UnexpectedChar(c.clone(), self.curr_line)),
+            }
+        } else {
+            Ok(self.create_token(TokenValue::EOF))
+        }
+    }
+}
+
 fn parse_identifier_or_value(s: &str) -> TokenValue {
     match s.chars().last() {
         Some('h') => {
@@ -216,11 +295,11 @@ fn parse_identifier_or_value(s: &str) -> TokenValue {
 #[cfg(test)]
 mod tests {
     use crate::parser::token::TokenValue;
-    use crate::parser::tokenizer::Tokenizer;
+    use crate::parser::tokenizer::{SimpleTokenizer, Tokenizer};
 
     #[test]
     fn test1() {
-        let mut parser = Tokenizer::new(
+        let mut parser = SimpleTokenizer::new(
             r#"
 .test_label:
 ADD    INC
@@ -256,7 +335,7 @@ ADD    INC
 
     #[test]
     fn test_short_value() {
-        let mut parser = Tokenizer::new(r"add a, 3Ah", 0);
+        let mut parser = SimpleTokenizer::new(r"add a, 3Ah", 0);
 
         assert_eq!(
             TokenValue::Identifier("add".to_string()),
@@ -272,7 +351,7 @@ ADD    INC
 
     #[test]
     fn test_wide_value() {
-        let mut parser = Tokenizer::new(r"add a, 3bAh", 0);
+        let mut parser = SimpleTokenizer::new(r"add a, 3bAh", 0);
 
         assert_eq!(
             TokenValue::Identifier("add".to_string()),
@@ -288,7 +367,7 @@ ADD    INC
 
     #[test]
     fn test_instruction_with_address() {
-        let mut parser = Tokenizer::new(
+        let mut parser = SimpleTokenizer::new(
             r#"ld bc, (2130h)
 call"#,
             0,
@@ -316,7 +395,7 @@ call"#,
 
     #[test]
     fn test_address_reg() {
-        let mut parser = Tokenizer::new(r#"(BC)"#, 0);
+        let mut parser = SimpleTokenizer::new(r#"(BC)"#, 0);
         assert_eq!(TokenValue::OpenParen, parser.next().unwrap().token);
         assert_eq!(
             TokenValue::Identifier("BC".to_string()),
@@ -327,7 +406,7 @@ call"#,
 
     #[test]
     fn test_address_reg_offset() {
-        let mut parser = Tokenizer::new(r#"(BC + 9h)"#, 0);
+        let mut parser = SimpleTokenizer::new(r#"(BC + 9h)"#, 0);
         assert_eq!(TokenValue::OpenParen, parser.next().unwrap().token);
         assert_eq!(
             TokenValue::Identifier("BC".to_string()),
@@ -340,7 +419,7 @@ call"#,
 
     #[test]
     fn test_peek_next() {
-        let mut parser = Tokenizer::new(r"add a, 3Ah", 0);
+        let mut parser = SimpleTokenizer::new(r"add a, 3Ah", 0);
 
         assert_eq!(
             TokenValue::Identifier("add".to_string()),

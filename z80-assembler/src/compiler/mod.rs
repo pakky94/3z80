@@ -2,14 +2,16 @@ use crate::compiler::instructions::{
     compile_instruction, label_not_found, CompileError, CompileErrorType, Placeholder,
     PlaceholderType,
 };
+use crate::compiler::r#macro::Macro;
 pub use crate::compiler::source_provider::{InMemorySourceProvider, SourceHeader, SourceProvider};
 use crate::compiler::utilities::relative_delta;
 use crate::domain::{Argument, Instruction, ParseItem};
-use crate::parser::Parser;
+use crate::parser::tokenizer::{BufferedTokenizer, Tokenizer};
+use crate::parser::{Parser, TokenValue};
 use std::collections::HashMap;
-use crate::parser::tokenizer::Tokenizer;
 
 mod instructions;
+mod r#macro;
 mod source_provider;
 mod utilities;
 
@@ -23,6 +25,7 @@ where
     label_map: HashMap<String, usize>,
     placeholders: Vec<Placeholder>,
     constants: HashMap<String, u16>,
+    macros: HashMap<String, Macro>,
 }
 
 impl<T> Compiler<T>
@@ -37,6 +40,7 @@ where
             label_map: HashMap::new(),
             placeholders: vec![],
             constants: HashMap::new(),
+            macros: HashMap::new(),
         }
     }
 
@@ -44,12 +48,12 @@ where
         for file in self.source_provider.file_list() {
             self.constants.clear();
             let source = self.source_provider.source(&file.filename);
-            let mut tokenizer = Tokenizer::new(&source, 0);
+            let mut tokenizer = BufferedTokenizer::new(&source, 0);
             let mut parser = Parser::new();
 
             loop {
                 if let Some(pi) = parser.parse_next(&mut tokenizer)? {
-                    self.process_item(pi)?;
+                    self.process_item(pi, &mut tokenizer)?;
                 } else {
                     break;
                 }
@@ -87,7 +91,11 @@ where
         Ok(self.out)
     }
 
-    fn process_item(&mut self, item: ParseItem) -> Result<(), CompileError> {
+    fn process_item(
+        &mut self,
+        item: ParseItem,
+        tokenizer: &mut BufferedTokenizer,
+    ) -> Result<(), CompileError> {
         Ok(match item {
             ParseItem::Label(l) => {
                 self.label_map.insert(l.name, self.idx);
@@ -115,7 +123,40 @@ where
             ParseItem::Constant(cons) => {
                 self.constants.insert(cons.name, cons.value);
             }
-            ParseItem::Directive(_) => unimplemented!(),
+            ParseItem::Directive(d) => {
+                if let Some((name, args)) = d.split_once(" ") {
+                    match name {
+                        "#defm" => {
+                            let args = args.split(',').map(|s| s.trim()).filter(|s| !s.is_empty());
+                            let mut m = Macro {
+                                name: "".to_string(),
+                                args: args.map(|s| s.to_string()).collect(),
+                                tokens: vec![],
+                            };
+                            loop {
+                                let t = tokenizer.next()?;
+                                if let TokenValue::Directive(d) = &t.token {
+                                    if d.starts_with("#endm") {
+                                        self.macros.insert((&m.name).to_string(), m);
+                                        return Ok(());
+                                    }
+                                }
+
+                                if let TokenValue::EOF = &t.token {
+                                    panic!("unexpected EOF");
+                                }
+
+                                m.tokens.push(t);
+                            }
+                        }
+                        "#exec" => {
+                            println!("macros: {:?}", self.macros);
+                            todo!()
+                        }
+                        _ => unimplemented!("unhandled macro: '{}'", name),
+                    }
+                }
+            }
         })
     }
 
@@ -551,7 +592,8 @@ RST 0h
                 SourceHeader { filename: "main.z80".to_string(), },
                 r#"
 #defm macro1 arg1, arg2, arg3, arg4
-
+ld IX, arg1
+LD arg2, arg3
 #endm
 @const1: 18h
 #exec macro1 A, 108h, (IX + 5h), @const1
