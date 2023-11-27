@@ -53,6 +53,12 @@ impl<'a> BufferedTokenizer<'a> {
             }))
         }
     }
+
+    pub fn push_front(&mut self, tokens: &Vec<Token>) {
+        for t in tokens.into_iter().rev() {
+            self.buffer.push_front(t.clone())
+        }
+    }
 }
 
 impl<'a> Tokenizer for BufferedTokenizer<'a> {
@@ -194,6 +200,21 @@ impl<'a> SimpleTokenizer<'a> {
             file_id: self.file_id,
         }
     }
+
+    pub fn collect_all(&mut self) -> Result<Vec<Token>, ParseError> {
+        let mut out = vec![];
+
+        loop {
+            let t = self.next()?;
+            if t.token == TokenValue::EOF {
+                break;
+            }
+
+            out.push(t);
+        }
+
+        Ok(out)
+    }
 }
 
 impl<'a> Tokenizer for SimpleTokenizer<'a> {
@@ -262,7 +283,9 @@ impl<'a> Tokenizer for SimpleTokenizer<'a> {
         if let Some((_, c)) = self.chars.peek() {
             match c {
                 '#' => self.parse_directive(),
-                ',' | '(' | ')' | '+' | '-' | '.' | ':' | '&' | '*' | '@' => self.parse_single_char(),
+                ',' | '(' | ')' | '+' | '-' | '.' | ':' | '&' | '*' | '@' => {
+                    self.parse_single_char()
+                }
                 'a'..='z' | 'A'..='Z' | '0'..='9' => self.parse_identifier(),
                 _ => Err(ParseError::UnexpectedChar(c.clone(), self.curr_line)),
             }

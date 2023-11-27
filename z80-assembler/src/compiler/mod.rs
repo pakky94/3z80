@@ -6,7 +6,7 @@ use crate::compiler::r#macro::Macro;
 pub use crate::compiler::source_provider::{InMemorySourceProvider, SourceHeader, SourceProvider};
 use crate::compiler::utilities::relative_delta;
 use crate::domain::{Argument, Instruction, ParseItem};
-use crate::parser::tokenizer::{BufferedTokenizer, Tokenizer};
+use crate::parser::tokenizer::{BufferedTokenizer, SimpleTokenizer, Tokenizer};
 use crate::parser::{Parser, TokenValue};
 use std::collections::HashMap;
 
@@ -124,13 +124,24 @@ where
                 self.constants.insert(cons.name, cons.value);
             }
             ParseItem::Directive(d) => {
-                if let Some((name, args)) = d.split_once(" ") {
-                    match name {
+                println!("macros {:#?}", self.macros);
+                if let Some((cmd, args)) = d.split_once(" ") {
+                    match cmd {
                         "#defm" => {
-                            let args = args.split(',').map(|s| s.trim()).filter(|s| !s.is_empty());
+                            let (name, args) = args
+                                .trim()
+                                .split_once(' ')
+                                .unwrap_or((args, ""));
+
+                            let args = args
+                                .split(',')
+                                .map(|s| s.trim())
+                                .filter(|s| !s.is_empty())
+                                .collect::<Vec<_>>();
+
                             let mut m = Macro {
-                                name: "".to_string(),
-                                args: args.map(|s| s.to_string()).collect(),
+                                name: name.to_string(),
+                                args: args.iter().map(|s| s.to_string()).collect(),
                                 tokens: vec![],
                             };
                             loop {
@@ -150,10 +161,48 @@ where
                             }
                         }
                         "#exec" => {
-                            println!("macros: {:?}", self.macros);
-                            todo!()
+                            let (name, args) = args
+                                .trim()
+                                .split_once(' ')
+                                .unwrap_or((args, ""));
+
+                            let args = args
+                                .split(',')
+                                .map(|s| s.trim())
+                                .filter(|s| !s.is_empty())
+                                .collect::<Vec<_>>();
+
+                            if let Some(m) = self.macros.get(name) {
+                                let mut args_map = vec![];
+
+                                for a in args.iter() {
+                                    let tokens = SimpleTokenizer::new(*a, 0).collect_all()?;
+                                    args_map.push(tokens);
+                                }
+
+                                let mut out = vec![];
+
+                                for t in &m.tokens {
+                                    if let TokenValue::Identifier(ident) = &t.token {
+                                        if let Some(i) = m.args.iter().position(|x| x == ident) {
+                                            for a in args_map[i].iter() {
+                                                out.push(a.clone());
+                                            }
+                                        } else {
+                                            out.push(t.clone())
+                                        }
+                                    } else {
+                                        out.push(t.clone())
+                                    }
+                                }
+
+                                println!("macro: {:#?}\nout {:#?}", m, out);
+                                tokenizer.push_front(&out)
+                            } else {
+                                panic!("macro: '{:?}' not found", args)
+                            }
                         }
-                        _ => unimplemented!("unhandled macro: '{}'", name),
+                        _ => unimplemented!("unhandled macro: '{}'", cmd),
                     }
                 }
             }
@@ -166,8 +215,7 @@ where
         Ok(Instruction {
             opcode: inst.opcode,
             arg0: arg0.unwrap_or(inst.arg0),
-            arg1: arg1.unwrap_or(inst.arg1),
-            line: inst.line,
+            arg1: arg1.unwrap_or(inst.arg1), line: inst.line,
             file_id: inst.file_id,
         })
     }
@@ -591,23 +639,25 @@ RST 0h
             files: vec![(
                 SourceHeader { filename: "main.z80".to_string(), },
                 r#"
-#defm macro1 arg1, arg2, arg3, arg4
-ld IX, arg1
-LD arg2, arg3
+#defm nested arg1, arg2
+ld arg1, arg2
 #endm
-@const1: 18h
-#exec macro1 A, 108h, (IX + 5h), @const1
-RST 30h
-RST 0h
+
+#defm macro123 arg1, arg2, arg3, arg4
+#exec nested arg1, arg4
+#exec nested arg3, arg2
+#endm
+
+#exec macro123 A, (IX + 5h), (hl), C
 "#.to_string(),
             )],
         }, 1024);
 
         compare_memory(
             vec![
-                0b11011111,
-                0b11110111,
-                0b11000111,
+                0xDD,
+                0b01111110,
+                0b00000101,
             ],
             compiler.compile().unwrap(),
         );
