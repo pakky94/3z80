@@ -6,8 +6,8 @@ use crate::compiler::r#macro::Macro;
 pub use crate::compiler::source_provider::{InMemorySourceProvider, SourceHeader, SourceProvider};
 use crate::compiler::utilities::relative_delta;
 use crate::domain::{Argument, Instruction, ParseItem};
-use crate::parser::tokenizer::{BufferedTokenizer, SimpleTokenizer, Tokenizer};
-use crate::parser::{Parser, TokenValue};
+use crate::parser::tokenizer::{BufferedTokenizer, Tokenizer};
+use crate::parser::{Parser, Token, TokenValue};
 use std::collections::HashMap;
 
 mod instructions;
@@ -123,87 +123,128 @@ where
             ParseItem::Constant(cons) => {
                 self.constants.insert(cons.name, cons.value);
             }
-            ParseItem::Directive(d) => {
+            ParseItem::Directive(cmd, tokens) => {
                 println!("macros {:#?}", self.macros);
-                if let Some((cmd, args)) = d.split_once(" ") {
-                    match cmd {
-                        "#defm" => {
-                            let (name, args) = args
-                                .trim()
-                                .split_once(' ')
-                                .unwrap_or((args, ""));
+                match cmd.as_str() {
+                    "#defm" => {
+                        let name = if let Some(Token {
+                            token: TokenValue::Identifier(name),
+                            ..
+                        }) = tokens.first()
+                        {
+                            name
+                        } else {
+                            unimplemented!("expected macro name error");
+                        };
 
-                            let args = args
-                                .split(',')
-                                .map(|s| s.trim())
-                                .filter(|s| !s.is_empty())
-                                .collect::<Vec<_>>();
+                        let mut args = vec![];
+                        let mut arg_tokens = tokens.iter().skip(1);
 
-                            let mut m = Macro {
-                                name: name.to_string(),
-                                args: args.iter().map(|s| s.to_string()).collect(),
-                                tokens: vec![],
-                            };
-                            loop {
-                                let t = tokenizer.next()?;
-                                if let TokenValue::Directive(d) = &t.token {
-                                    if d.starts_with("#endm") {
-                                        self.macros.insert((&m.name).to_string(), m);
-                                        return Ok(());
-                                    }
+                        let mut a = vec![];
+                        loop {
+                            match arg_tokens.next() {
+                                Some(Token {
+                                    token: TokenValue::Comma,
+                                    ..
+                                }) => {
+                                    args.push(a);
+                                    a = vec![];
                                 }
-
-                                if let TokenValue::EOF = &t.token {
-                                    panic!("unexpected EOF");
+                                Some(t) => a.push(t.clone()),
+                                None => {
+                                    args.push(a);
+                                    break;
                                 }
-
-                                m.tokens.push(t);
                             }
                         }
-                        "#exec" => {
-                            let (name, args) = args
-                                .trim()
-                                .split_once(' ')
-                                .unwrap_or((args, ""));
 
-                            let args = args
-                                .split(',')
-                                .map(|s| s.trim())
-                                .filter(|s| !s.is_empty())
-                                .collect::<Vec<_>>();
+                        println!("args {:#?}", args);
 
-                            if let Some(m) = self.macros.get(name) {
-                                let mut args_map = vec![];
-
-                                for a in args.iter() {
-                                    let tokens = SimpleTokenizer::new(*a, 0).collect_all()?;
-                                    args_map.push(tokens);
+                        let mut m = Macro {
+                            name: name.to_string(),
+                            args,
+                            tokens: vec![],
+                        };
+                        loop {
+                            let t = tokenizer.next()?;
+                            if let TokenValue::Directive(d) = &t.token {
+                                if d.starts_with("#endm") {
+                                    self.macros.insert((&m.name).to_string(), m);
+                                    return Ok(());
                                 }
+                            }
 
-                                let mut out = vec![];
+                            if let TokenValue::EOF = &t.token {
+                                panic!("unexpected EOF");
+                            }
 
-                                for t in &m.tokens {
-                                    if let TokenValue::Identifier(ident) = &t.token {
-                                        if let Some(i) = m.args.iter().position(|x| x == ident) {
-                                            for a in args_map[i].iter() {
-                                                out.push(a.clone());
-                                            }
+                            m.tokens.push(t);
+                        }
+                    }
+                    "#exec" => {
+                        let name = if let Some(Token {
+                            token: TokenValue::Identifier(name),
+                            ..
+                        }) = tokens.first()
+                        {
+                            name
+                        } else {
+                            unimplemented!("expected macro name error");
+                        };
+
+                        let mut args = vec![];
+                        let mut arg_tokens = tokens.iter().skip(1);
+
+                        let mut a = vec![];
+                        loop {
+                            match arg_tokens.next() {
+                                Some(Token {
+                                    token: TokenValue::Comma,
+                                    ..
+                                }) => {
+                                    args.push(a);
+                                    a = vec![];
+                                }
+                                Some(t) => a.push(t.clone()),
+                                None => {
+                                    args.push(a);
+                                    break;
+                                }
+                            }
+                        }
+
+                        if let Some(m) = self.macros.get(name) {
+                            let mut out = vec![];
+
+                            for t in &m.tokens {
+                                if let TokenValue::Identifier(ident) = &t.token {
+                                    if let Some(i) = m.args.iter().position(|x| {
+                                        if let Some(TokenValue::Identifier(x1)) =
+                                            x.first().map(|x| &x.token)
+                                        {
+                                            x1 == ident
                                         } else {
-                                            out.push(t.clone())
+                                            false
+                                        }
+                                    }) {
+                                        for a in args[i].iter() {
+                                            out.push(a.clone());
                                         }
                                     } else {
                                         out.push(t.clone())
                                     }
+                                } else {
+                                    out.push(t.clone())
                                 }
-
-                                println!("macro: {:#?}\nout {:#?}", m, out);
-                                tokenizer.push_front(&out)
-                            } else {
-                                panic!("macro: '{:?}' not found", args)
                             }
+
+                            println!("macro: {:#?}\nout {:#?}", m, out);
+                            tokenizer.push_front(&out)
+                        } else {
+                            panic!("macro: '{:?}' not found", args)
                         }
-                        _ => unimplemented!("unhandled macro: '{}'", cmd),
                     }
+                    _ => unimplemented!("unhandled macro: '{}'", cmd),
                 }
             }
         })
@@ -215,7 +256,8 @@ where
         Ok(Instruction {
             opcode: inst.opcode,
             arg0: arg0.unwrap_or(inst.arg0),
-            arg1: arg1.unwrap_or(inst.arg1), line: inst.line,
+            arg1: arg1.unwrap_or(inst.arg1),
+            line: inst.line,
             file_id: inst.file_id,
         })
     }
@@ -644,11 +686,11 @@ ld arg1, arg2
 #endm
 
 #defm macro123 arg1, arg2, arg3, arg4
-#exec nested arg1, arg4
-#exec nested arg3, arg2
+#exec nested arg1, arg4    ; ld A, (IX + 5h)
+#exec nested arg3, arg2    ; ld (hl), C
 #endm
 
-#exec macro123 A, (IX + 5h), (hl), C
+#exec macro123 A, C, (hl), (IX + 5h)
 "#.to_string(),
             )],
         }, 1024);
@@ -658,6 +700,7 @@ ld arg1, arg2
                 0xDD,
                 0b01111110,
                 0b00000101,
+                0b01110001,
             ],
             compiler.compile().unwrap(),
         );

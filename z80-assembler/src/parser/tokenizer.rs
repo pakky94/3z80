@@ -171,7 +171,7 @@ impl<'a> SimpleTokenizer<'a> {
             loop {
                 if let Some((p, c)) = self.chars.peek() {
                     match c {
-                        '\n' => {
+                        ' ' | '\n' => {
                             let end = (*p).clone();
                             return Ok(self.create_token(TokenValue::Directive(
                                 self.source[start..end].to_string(),

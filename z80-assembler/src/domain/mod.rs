@@ -1,4 +1,5 @@
 use crate::domain::enums::{Condition, ShortReg, WideReg};
+use crate::parser::Token;
 
 pub mod conditions;
 pub mod enums;
@@ -10,7 +11,7 @@ pub enum ParseItem {
     Instruction(Instruction),
     Data(Vec<u8>),
     Constant(Constant),
-    Directive(String),
+    Directive(String, Vec<Token>),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
