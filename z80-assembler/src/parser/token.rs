@@ -11,6 +11,7 @@ pub enum TokenValue {
     OpenParen,
     CloseParen,
     Plus,
+    Minus,
     Value(u16, u8),
     Comma,
     Dot,

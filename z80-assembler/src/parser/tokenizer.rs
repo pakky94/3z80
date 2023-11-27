@@ -1,6 +1,6 @@
-use std::collections::VecDeque;
 use crate::parser::errors::{ParseError, UnexpectedToken};
 use crate::parser::token::{Token, TokenValue};
+use std::collections::VecDeque;
 use std::iter::Peekable;
 use std::str::CharIndices;
 
@@ -36,7 +36,7 @@ impl<'a> BufferedTokenizer<'a> {
                 curr_line: 1,
                 head: None,
             },
-            buffer: VecDeque::new()
+            buffer: VecDeque::new(),
         }
     }
 
@@ -149,6 +149,7 @@ impl<'a> SimpleTokenizer<'a> {
             Some((_, '(')) => Ok(self.create_token(TokenValue::OpenParen)),
             Some((_, ')')) => Ok(self.create_token(TokenValue::CloseParen)),
             Some((_, '+')) => Ok(self.create_token(TokenValue::Plus)),
+            Some((_, '-')) => Ok(self.create_token(TokenValue::Minus)),
             Some((_, '.')) => Ok(self.create_token(TokenValue::Dot)),
             Some((_, ':')) => Ok(self.create_token(TokenValue::Colon)),
             Some((_, '&')) => Ok(self.create_token(TokenValue::Amp)),
@@ -261,7 +262,7 @@ impl<'a> Tokenizer for SimpleTokenizer<'a> {
         if let Some((_, c)) = self.chars.peek() {
             match c {
                 '#' => self.parse_directive(),
-                ',' | '(' | ')' | '+' | '.' | ':' | '&' | '*' | '@' => self.parse_single_char(),
+                ',' | '(' | ')' | '+' | '-' | '.' | ':' | '&' | '*' | '@' => self.parse_single_char(),
                 'a'..='z' | 'A'..='Z' | '0'..='9' => self.parse_identifier(),
                 _ => Err(ParseError::UnexpectedChar(c.clone(), self.curr_line)),
             }

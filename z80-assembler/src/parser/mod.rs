@@ -165,13 +165,21 @@ impl Parser {
     ) -> Result<Argument, ParseError> {
         match tokenizer.next()?.token {
             TokenValue::Identifier(i) => {
-                if let TokenValue::Plus = tokenizer.peek()?.token {
+                let next = tokenizer.peek()?.token;
+                if next == TokenValue::Plus || next == TokenValue::Minus {
                     tokenizer.next()?;
                     if let TokenValue::Value(offset, _) = tokenizer.next()?.token {
                         // TODO: validate length here???
                         if let ParsedRegister::WideReg(wr) = parse_register(&i) {
                             tokenizer.expect(TokenValue::CloseParen)?;
-                            Ok(Argument::RegOffsetAddress(wr, offset))
+                            Ok(Argument::RegOffsetAddress(
+                                wr,
+                                if next == TokenValue::Plus {
+                                    offset
+                                } else {
+                                    (0 - (offset as i16)) as u16
+                                },
+                            ))
                         } else {
                             unimplemented!()
                         }
