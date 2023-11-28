@@ -260,7 +260,7 @@ mod tests {
     use crate::domain::enums::{Condition, ShortReg, WideReg};
     use crate::domain::{Constant, Label};
     use crate::parser::tokenizer::SimpleTokenizer;
-    use crate::parser::{Argument, Instruction, ParseItem, Parser};
+    use crate::parser::{Argument, Instruction, ParseItem, Parser, Token, TokenValue};
 
     #[test]
     fn test_parse1() {
@@ -485,16 +485,23 @@ add a, @const1"#,
     fn test_parse_directives() {
         let res = parse_all(
             r#"
-#test dir 123
+#test dir 12h
 "#,
         );
-        // #include "test.z80"
-        // assert_eq!(
-        //     ParseItem::Directive(r#"#include "test.z80""#.to_string()),
-        //     *res.get(0).unwrap()
-        // );
+
         assert_eq!(
-            ParseItem::Directive(r#"#test dir 123"#.to_string(), vec![]),
+            ParseItem::Directive("#test".to_string(), vec![
+                Token {
+                    token: TokenValue::Identifier("dir".to_string()),
+                    line: 2,
+                    file_id: 0,
+                },
+                Token {
+                    token: TokenValue::Value(18, 1),
+                    line: 2,
+                    file_id: 0,
+                },
+            ]),
             *res.get(0).unwrap()
         );
     }

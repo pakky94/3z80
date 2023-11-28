@@ -127,38 +127,7 @@ where
                 println!("macros {:#?}", self.macros);
                 match cmd.as_str() {
                     "#defm" => {
-                        let name = if let Some(Token {
-                            token: TokenValue::Identifier(name),
-                            ..
-                        }) = tokens.first()
-                        {
-                            name
-                        } else {
-                            unimplemented!("expected macro name error");
-                        };
-
-                        let mut args = vec![];
-                        let mut arg_tokens = tokens.iter().skip(1);
-
-                        let mut a = vec![];
-                        loop {
-                            match arg_tokens.next() {
-                                Some(Token {
-                                    token: TokenValue::Comma,
-                                    ..
-                                }) => {
-                                    args.push(a);
-                                    a = vec![];
-                                }
-                                Some(t) => a.push(t.clone()),
-                                None => {
-                                    args.push(a);
-                                    break;
-                                }
-                            }
-                        }
-
-                        println!("args {:#?}", args);
+                        let (name, args) = get_macro_name_and_args(tokens)?;
 
                         let mut m = Macro {
                             name: name.to_string(),
@@ -182,38 +151,9 @@ where
                         }
                     }
                     "#exec" => {
-                        let name = if let Some(Token {
-                            token: TokenValue::Identifier(name),
-                            ..
-                        }) = tokens.first()
-                        {
-                            name
-                        } else {
-                            unimplemented!("expected macro name error");
-                        };
+                        let (name, args) = get_macro_name_and_args(tokens)?;
 
-                        let mut args = vec![];
-                        let mut arg_tokens = tokens.iter().skip(1);
-
-                        let mut a = vec![];
-                        loop {
-                            match arg_tokens.next() {
-                                Some(Token {
-                                    token: TokenValue::Comma,
-                                    ..
-                                }) => {
-                                    args.push(a);
-                                    a = vec![];
-                                }
-                                Some(t) => a.push(t.clone()),
-                                None => {
-                                    args.push(a);
-                                    break;
-                                }
-                            }
-                        }
-
-                        if let Some(m) = self.macros.get(name) {
+                        if let Some(m) = self.macros.get(name.as_str()) {
                             let mut out = vec![];
 
                             for t in &m.tokens {
@@ -238,7 +178,6 @@ where
                                 }
                             }
 
-                            println!("macro: {:#?}\nout {:#?}", m, out);
                             tokenizer.push_front(&out)
                         } else {
                             panic!("macro: '{:?}' not found", args)
@@ -328,6 +267,41 @@ where
             _ => (None, -1),
         }
     }
+}
+
+fn get_macro_name_and_args<'a>(tokens: Vec<Token>) -> Result<(String, Vec<Vec<Token>>), CompileError> {
+    let name = if let Some(Token {
+        token: TokenValue::Identifier(name),
+        ..
+    }) = tokens.first()
+    {
+        name
+    } else {
+        unimplemented!("expected macro name error");
+    };
+
+    let mut args = vec![];
+    let mut arg_tokens = tokens.iter().skip(1);
+
+    let mut a = vec![];
+    loop {
+        match arg_tokens.next() {
+            Some(Token {
+                token: TokenValue::Comma,
+                ..
+            }) => {
+                args.push(a);
+                a = vec![];
+            }
+            Some(t) => a.push(t.clone()),
+            None => {
+                args.push(a);
+                break;
+            }
+        }
+    }
+
+    Ok((name.clone(), args))
 }
 
 #[cfg(test)]
