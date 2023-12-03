@@ -6,8 +6,9 @@
 #include "io.h"
 
 void output_shiftregister();
-char load_mem_addr();
 char read_mem_addr();
+void do_load_mem_addr();
+void load_mem_addr(char bank, char addr_high, char addr_low);
 void do_write_256();
 void write_256(char bank, char addr_high, char *data);
 void do_write_byte();
@@ -29,7 +30,7 @@ int main() {
 
         switch (command) {
             case 'l':
-                load_mem_addr();
+                do_load_mem_addr();
                 break;
 
             case 'r':
@@ -89,12 +90,18 @@ char read_mem_addr() {
     return val;
 }
 
-char load_mem_addr() {
+void do_load_mem_addr() {
     char bank, addr_high, addr_low;
     scanf("%c", &bank);
     scanf("%c", &addr_high);
     scanf("%c", &addr_low);
 
+    load_mem_addr(bank, addr_high, addr_low);
+
+    printf("l\n");
+}
+
+void load_mem_addr(char bank, char addr_high, char addr_low) {
     set_mem_read(false);
     set_mem_write(false);
 
@@ -112,8 +119,6 @@ char load_mem_addr() {
     set_addr_pins_dir(GPIO_IN);
     set_shiftreg_output_enabled(false);
     set_mem_read(false);
-
-    printf("l\n");
 }
 
 void do_write_256() {

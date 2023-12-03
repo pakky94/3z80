@@ -93,10 +93,16 @@ void init_io_pins() {
     gpio_init(SR_DATA);
     gpio_init(SR_CLOCK);
 
+    gpio_init(MEM_WE);
+    gpio_init(MEM_RE);
+
     gpio_set_dir(SR_OE_N, GPIO_OUT);
     gpio_set_dir(SR_LATCH, GPIO_OUT);
     gpio_set_dir(SR_DATA, GPIO_OUT);
     gpio_set_dir(SR_CLOCK, GPIO_OUT);
+
+    gpio_set_dir(MEM_WE, GPIO_OUT);
+    gpio_set_dir(MEM_RE, GPIO_OUT);
 }
 
 void set_shiftreg_value(uint value) {
