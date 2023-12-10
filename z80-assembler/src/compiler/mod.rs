@@ -124,7 +124,6 @@ where
                 self.constants.insert(cons.name, cons.value);
             }
             ParseItem::Directive(cmd, tokens) => {
-                println!("macros {:#?}", self.macros);
                 match cmd.as_str() {
                     "#defm" => {
                         let (name, args) = get_macro_name_and_args(tokens)?;
