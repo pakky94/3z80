@@ -490,18 +490,21 @@ add a, @const1"#,
         );
 
         assert_eq!(
-            ParseItem::Directive("#test".to_string(), vec![
-                Token {
-                    token: TokenValue::Identifier("dir".to_string()),
-                    line: 2,
-                    file_id: 0,
-                },
-                Token {
-                    token: TokenValue::Value(18, 1),
-                    line: 2,
-                    file_id: 0,
-                },
-            ]),
+            ParseItem::Directive(
+                "#test".to_string(),
+                vec![
+                    Token {
+                        token: TokenValue::Identifier("dir".to_string()),
+                        line: 2,
+                        file_id: 0,
+                    },
+                    Token {
+                        token: TokenValue::Value(18, 1),
+                        line: 2,
+                        file_id: 0,
+                    },
+                ]
+            ),
             *res.get(0).unwrap()
         );
     }
