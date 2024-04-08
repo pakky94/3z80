@@ -23,6 +23,25 @@ int main() {
     set_data_pins_dir(GPIO_OUT);
     set_shiftreg_output_enabled(true);
 
+    char data[256];
+    for (int i = 0; i < 256; i++) {
+        data[i] = 255 - i;
+    }
+    write_256(0, 0, data);
+
+    for (int i = 0; i < 256; i++) {
+        data[i] = i;
+    }
+    write_256(0, 1, data);
+
+    while (true) {
+        for (uint b = 0; b < 2; b++) {
+            for (int i = 0; i < 256; i++) {
+                load_mem_addr(0, b, i);
+            }
+        }
+    }
+
     char command;
 
     while (true) {
@@ -114,7 +133,7 @@ void load_mem_addr(char bank, char addr_high, char addr_low) {
 
     set_mem_read(true);
 
-    sleep_ms(1000);
+    sleep_ms(50);
 
     set_addr_pins_dir(GPIO_IN);
     set_shiftreg_output_enabled(false);
