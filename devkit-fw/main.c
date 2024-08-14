@@ -13,12 +13,17 @@ void do_write_256();
 void write_256(char bank, char addr_high, char *data);
 void do_write_byte();
 void write_byte(char bank, char addr_high, char addr_low, char data);
+void demo_vga();
 
 int main() {
     stdio_init_all();
 
     init_io_pins();
 
+    demo_vga();
+    while(true){}
+
+/*
     set_addr_pins_dir(GPIO_OUT);
     set_data_pins_dir(GPIO_OUT);
     set_shiftreg_output_enabled(true);
@@ -41,6 +46,7 @@ int main() {
             }
         }
     }
+    */
 
     char command;
 
@@ -194,17 +200,33 @@ void write_byte(char bank, char addr_high, char addr_low, char data) {
     set_mem_write(false);
 
     set_data_pins_dir(GPIO_OUT);
-    set_addr_pins_dir(GPIO_OUT);
 
-    set_shiftreg_value(((uint)bank << 8) || (uint)addr_high);
+    set_shiftreg_value(((uint)addr_high << 8) || (uint)addr_low);
     set_shiftreg_output_enabled(true);
 
-    write_addr_pins(addr_low);
     write_data_pins(data);
+    sleep_ms(1);
     set_mem_write(true);
+    sleep_ms(1);
     set_mem_write(false);
+    sleep_ms(1);
 
     set_data_pins_dir(GPIO_IN);
-    set_addr_pins_dir(GPIO_IN);
     set_shiftreg_output_enabled(false);
+}
+
+void demo_vga() {
+    set_addr_pins_dir(GPIO_OUT);
+    set_mem_read(false);
+    bool blink = false;
+
+    for (int y = 0; y < 1; y++) {
+        gpio_put(A_1, blink);
+        blink = !blink;
+        for (int x = 0; x < 256; x++) {
+            write_byte(0, (char)y, (char)x, (char)x);
+        }
+    }
+
+    set_mem_read(true);
 }

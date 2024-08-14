@@ -56,15 +56,15 @@ B = 8 && !32
 
 ## Connectors pinout
 
-### VGA signals connector (IDC 40pin)
+### (VGA signals) - (Framebuffers) - (Palette mapper) connector (IDC 40pin)
 
 ```
          ------------
          |          |
-  HSync  |  40  39  | Clock
-  VSync  |  38  37  |
-  HBlank |  36  35  | !HBlank
-  VBlank |  34  33  | !VBlank
+  VSync  |  40  39  | Clock
+  HSync  |  38  37  |
+ !VBlank |  36  35  | VBlank
+ !HBlank |  34  33  | HBlank
     Y0   |  32  31  |   X0
     Y1   |  30  29  |   X1
     Y2   |  28  27  |   X2
@@ -77,10 +77,10 @@ B = 8 && !32
          |  14  13  |
          |  12  11  |
          |  10   9  |
-         |   8   7  |
-         |   6   5  |
-         |   4   3  |
-         |   2   1  |
+    D7   |   8   7  |   D6
+    D5   |   6   5  |   D4
+    D3   |   4   3  |   D2
+    D1   |   2   1  |   D0
          |          |
          ------------
 ```

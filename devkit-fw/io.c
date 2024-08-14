@@ -110,8 +110,11 @@ void set_shiftreg_value(uint value) {
     gpio_put(SR_DATA, 0);
 
     for (int i = 15; i >= 0; i--) {
+        sleep_ms(1);
         gpio_put(SR_CLOCK, 0);
+        sleep_ms(1);
         gpio_put(SR_DATA, value & (1 << i));
+        sleep_ms(1);
         gpio_put(SR_CLOCK, 1);
     }
 
