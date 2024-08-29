@@ -1,0 +1,2 @@
+read_verilog fifo.v
+synth_ice40 -top half_str -blif build/fifo.blif
