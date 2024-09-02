@@ -11,6 +11,7 @@
         devShells.default = pkgs.mkShell {
           nativeBuildInputs = with pkgs; [
             go
+            pkg-config
             SDL2
             SDL2_gfx
           ];
