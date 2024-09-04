@@ -16,7 +16,7 @@ type renderSurface interface {
 	Set(x int, y int, color color.Color)
 }
 
-func RenderToSurface(surface renderSurface, f *Frame) error {
+func RenderToSurface(surface renderSurface, f *Frame) {
 	if f.Width*f.Height != len(f.Pixels) {
 		panic(fmt.Sprintf("Width * Height should be equal to Pixels lentgh, got width=%d, height=%d, len(Pixels)=%d", f.Width, f.Height, len(f.Pixels)))
 	}
@@ -32,8 +32,6 @@ func RenderToSurface(surface renderSurface, f *Frame) error {
 			surface.Set(x, y, colors[f.Pixels[y*f.Width+x]])
 		}
 	}
-
-	return nil
 }
 
 func WriteColor(palette []uint8, index int, r uint8, g uint8, b uint8) {
